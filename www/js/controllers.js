@@ -35,7 +35,7 @@ angular.module('push.controllers', [])
   });
 
   $scope.$on('event:auth-logoutComplete', function() {
-    $state.go('app.dash', {}, { reload: true, inherit: false });
+    $state.go('tab.dash', {}, { reload: true, inherit: false });
   });
 })
 .controller('FriendsCtrl', function($scope, Friends) {
@@ -44,7 +44,10 @@ angular.module('push.controllers', [])
 .controller('FriendDetailCtrl', function($scope, $stateParams, Friends) {
   $scope.friend = Friends.get($stateParams.friendId);
 })
-.controller('AccountCtrl', function($scope) {
+.controller('AccountCtrl', function($scope, AuthenticationService) {
+  $scope.logout = function () {
+    AuthenticationService.logout();
+  };
   $scope.settings = {
     enableFriends: true
   };

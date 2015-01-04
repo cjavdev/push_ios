@@ -42,9 +42,21 @@ angular.module('push.services', [])
       });
       return deferred.promise;
     }
+
+    function fbLogout() {
+      var dfd = $q.defer();
+      openFB.logout(function () {
+        $rootScope.$broadcast('event:auth-loginRequired');
+        dfd.resolve();
+      });
+      return dfd.promise;
+    }
     return {
       login: function () {
         return fbLogin();
+      },
+      logout: function () {
+        return fbLogout();
       }
     };
   })
