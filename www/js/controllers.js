@@ -1,30 +1,49 @@
 angular.module('push.controllers', [])
+.controller('DashCtrl', function($scope, $ionicModal, Workouts) {
+  $scope.workouts = [];
+  Workouts.all().then(function (workouts) {
+    $scope.workouts = workouts;
+  });
 
-.controller('DashCtrl', function($scope, Auth) {
-  Auth.get().then(function () {
-    console.log(Auth.currentUser());
+  $ionicModal.fromTemplateUrl('templates/login.html', function (modal) {
+    $scope.loginModal = modal;
+  }, {
+    scope: $scope,
+    animation: 'slide-in-up'
+  });
+
+  $scope.$on('$destroy', function () {
+    $scope.loginModal.remove();
   });
 })
-
-.controller('ChatsCtrl', function($scope, Chats) {
-  $scope.chats = Chats.all();
-  $scope.remove = function(chat) {
-    Chats.remove(chat);
+.controller('LoginCtrl', function($scope, AuthenticationService) {
+  $scope.message = '';
+  $scope.login = function () {
+    AuthenticationService.login();
   };
-})
 
-.controller('ChatDetailCtrl', function($scope, $stateParams, Chats) {
-  $scope.chat = Chats.get($stateParams.chatId);
-})
+  $scope.$on('event:auth-loginRequired', function(e, rejection) {
+    $scope.loginModal.show();
+  });
 
+  $scope.$on('event:auth-loginConfirmed', function() {
+    $scope.loginModal.hide();
+  });
+
+  $scope.$on('event:auth-loginFailed', function (e, status) {
+    $scope.message = "Login Failed";
+  });
+
+  $scope.$on('event:auth-logoutComplete', function() {
+    $state.go('app.dash', {}, { reload: true, inherit: false });
+  });
+})
 .controller('FriendsCtrl', function($scope, Friends) {
   $scope.friends = Friends.all();
 })
-
 .controller('FriendDetailCtrl', function($scope, $stateParams, Friends) {
   $scope.friend = Friends.get($stateParams.friendId);
 })
-
 .controller('AccountCtrl', function($scope) {
   $scope.settings = {
     enableFriends: true
