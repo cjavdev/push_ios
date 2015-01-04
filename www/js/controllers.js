@@ -1,12 +1,12 @@
 angular.module('push.controllers', [])
-.controller('DashCtrl', function($scope, $ionicModal, Workouts) {
+.controller('DashCtrl', function($scope, $state, $ionicModal, Workouts) {
   $scope.workouts = [];
   Workouts.all().then(function (workouts) {
     $scope.workouts = workouts;
   });
 
   $scope.startWorkout = function () {
-    console.log("clicke");
+    $state.go('workout', {}, { reload: true, inherit: false });
   };
 
   $ionicModal.fromTemplateUrl('templates/login.html', function (modal) {
@@ -19,6 +19,20 @@ angular.module('push.controllers', [])
   $scope.$on('$destroy', function () {
     $scope.loginModal.remove();
   });
+})
+.controller('WorkoutCtrl', function($scope) {
+  console.log("workout controller initialized");
+  $scope.message = "testing";
+  $scope.count = 0;
+  $scope.push = function () {
+    $scope.count++;
+  };
+
+  $scope.completeSet = function () {
+  };
+
+  $scope.completeWorkout = function () {
+  };
 })
 .controller('LoginCtrl', function($scope, AuthenticationService) {
   $scope.message = '';

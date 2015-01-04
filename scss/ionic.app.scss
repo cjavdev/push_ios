@@ -33,12 +33,20 @@ body, html, * {
   margin-left: auto;
   margin-right: auto;
   background-color: $energized;
-  height: 200px;
-  width: 200px;
+  height: 250px;
+  width: 250px;
   text-align: center;
   vertical-align: middle;
   position: relative;
-  padding-top: 35%;
+  padding-top: 45%;
   font-weight: 700;
   color: white;
+  font-size: 44px;
+}
+
+.pushup-count {
+  padding-top: 50px;
+  text-align: center;
+  font-size: 90px;
+  font-weight: 700;
 }

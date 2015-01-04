@@ -1,0 +1,22 @@
+<ion-view view-title="Pushbit" ng-controller="WorkoutCtrl">
+  <ion-content class="padding">
+    <div ng-click="push()" class="row">
+      <div class="col col-80 col-offset-10">
+        <div class="start-workout">
+          <p>PUSH!</p>
+        </div>
+      </div>
+    </div>
+    <div class="pushup-count">
+      <p>{{ count }}</p>
+    </div>
+  </ion-content>
+  <ion-footer-bar class="bar-balanced">
+    <button class="button button-clear" ng-click="completeSet()">
+      Set Completed
+    </button>
+    <button ng-click="completeWorkout()" class="button button-clear">
+      Workout Completed
+    </button>
+  </ion-footer-bar>
+</ion-view>

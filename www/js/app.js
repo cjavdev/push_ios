@@ -23,6 +23,10 @@ angular.module('push', ['ionic', 'push.controllers', 'push.services'])
     // Set up the various states which the app can be in.
     // Each state's controller can be found in controllers.js
     $stateProvider
+      .state('workout', {
+        url: '/workout',
+        templateUrl: "templates/workout.html",
+      })
       .state('tab', {
         url: "/tab",
         abstract: true,
@@ -64,5 +68,6 @@ angular.module('push', ['ionic', 'push.controllers', 'push.services'])
           }
         }
       });
+
     $urlRouterProvider.otherwise('/tab/dash');
   });
