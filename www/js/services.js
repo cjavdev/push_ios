@@ -5,6 +5,7 @@ angular.module('push.services', [])
       login: function () {
         var deferred = $q.defer();
         openFB.login(function (response) {
+          debugger;
           deferred.resolve(response.status);
         }, {
           scope: 'email'
@@ -31,7 +32,7 @@ angular.module('push.services', [])
     //   }
     // };
   })
-  .factory('Workouts', function ($http, $q, loc) {
+  .factory('Workouts', function ($http, $q, $rootScope, loc) {
     function url(id) {
       if (id) {
         return loc.apiBase + '/workouts/' + id + '.json';
@@ -68,7 +69,8 @@ angular.module('push.services', [])
             return new Workout(w);
           });
           dfd.resolve(workouts);
-        }, function (resp) {
+        }, function (resp, status) {
+          $rootScope.$broadcast('event:auth-loginRequired', status);
           dfd.reject(resp.data);
         });
         return dfd.promise;
