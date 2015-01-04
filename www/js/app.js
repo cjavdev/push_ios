@@ -1,7 +1,7 @@
 /*global angular, openFB, window, cordova */
 angular.module('push', ['ionic', 'push.controllers', 'push.services'])
   .run(function ($ionicPlatform) {
-    openFB.init({appId: '1389364367952791'});
+    openFB.init({ appId: '1389364367952791' });
     $ionicPlatform.ready(function () {
       // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
       // for form inputs)

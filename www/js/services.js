@@ -1,16 +1,49 @@
 /*global _, openFB, angular */
 angular.module('push.services', [])
-  .factory('AuthenticationService', function ($q, $http) {
+  .factory('AuthenticationService', function ($q, $http, loc) {
+    function fbLogin () {
+      var deferred = $q.defer();
+      openFB.login(function (response) {
+        console.dir(response);
+        if(response.status === "connected") {
+          getFBAuthParams(response.authResponse).then(function (user) {
+            deferred.resolve(user);
+          });
+        } else {
+          deferred.reject(response.status);
+        }
+      }, {
+        scope: 'email'
+      });
+      return deferred.promise;
+    }
+
+    function getFBAuthParams (authResponse) {
+      var deferred = $q.defer();
+      openFB.api({
+        path: '/v1.0/me',
+        success: function (response) {
+          response.authResponse = authResponse;
+          pushbitLogin(response).then(function (user) {
+            deferred.resolve(user);
+          });
+        }
+      });
+      return deferred.promise;
+    }
+
+    function pushbitLogin (loginParams) {
+      var deferred = $q.defer();
+      $http.post(loc.apiBase + '/session', loginParams).then(function (response) {
+        console.dir(response);
+        $window.localStorage['currentUser'] = JSON.stringify(response.data);
+        deferred.resolve(response.data);
+      });
+      return deferred.promise;
+    }
     return {
       login: function () {
-        var deferred = $q.defer();
-        openFB.login(function (response) {
-          debugger;
-          deferred.resolve(response.status);
-        }, {
-          scope: 'email'
-        });
-        return deferred.promise;
+        return fbLogin();
       }
     };
     // return {
