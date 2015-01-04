@@ -20,18 +20,24 @@ angular.module('push.controllers', [])
     $scope.loginModal.remove();
   });
 })
-.controller('WorkoutCtrl', function($scope) {
-  console.log("workout controller initialized");
-  $scope.message = "testing";
+.controller('WorkoutCtrl', function($scope, $state) {
+  $scope.sets = [];
   $scope.count = 0;
+
   $scope.push = function () {
     $scope.count++;
   };
 
   $scope.completeSet = function () {
+    $scope.sets.push($scope.count);
+    $scope.count = 0;
   };
 
   $scope.completeWorkout = function () {
+    if($scope.count > 0) {
+      $scope.sets.push($scope.count);
+    }
+    $state.go('tab.dash', {}, { reload: true, inherit: false });
   };
 })
 .controller('LoginCtrl', function($scope, AuthenticationService) {
