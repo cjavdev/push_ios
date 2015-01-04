@@ -1,5 +1,25 @@
-angular.module('starter.services', [])
+angular.module('push.services', [])
+.factory('Auth', function($q, $http, $window) {
 
+  return {
+    currentUser: function () {
+      return JSON.parse($window.localStorage['currentUser']);
+    },
+    get: function () {
+      var deferred = $q.defer();
+      $http.get('http://localhost:3000/').
+        success(function(data, status, headers, config) {
+          $window.localStorage['currentUser'] = JSON.stringify(data);
+          deferred.resolve(data);
+        }).
+        error(function(data, status, headers, config) {
+          console.log('error', data);
+          deferred.reject(data);
+        });
+      return deferred.promise;
+    }
+  };
+})
 .factory('Chats', function() {
   // Might use a resource here that returns a JSON array
 

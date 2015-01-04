@@ -1,12 +1,16 @@
-angular.module('starter.controllers', [])
+angular.module('push.controllers', [])
 
-.controller('DashCtrl', function($scope) {})
+.controller('DashCtrl', function($scope, Auth) {
+  Auth.get().then(function () {
+    console.log(Auth.currentUser());
+  });
+})
 
 .controller('ChatsCtrl', function($scope, Chats) {
   $scope.chats = Chats.all();
   $scope.remove = function(chat) {
     Chats.remove(chat);
-  }
+  };
 })
 
 .controller('ChatDetailCtrl', function($scope, $stateParams, Chats) {
