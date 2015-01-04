@@ -1,6 +1,6 @@
 /*global _, openFB, angular */
 angular.module('push.services', [])
-  .factory('AuthenticationService', function ($q, $http, loc) {
+  .factory('AuthenticationService', function ($q, $http, $window, $rootScope, loc) {
     function fbLogin () {
       var deferred = $q.defer();
       openFB.login(function (response) {
@@ -38,6 +38,7 @@ angular.module('push.services', [])
         console.dir(response);
         $window.localStorage['currentUser'] = JSON.stringify(response.data);
         deferred.resolve(response.data);
+        $rootScope.$broadcast('event:auth-loginConfirmed');
       });
       return deferred.promise;
     }
@@ -46,24 +47,6 @@ angular.module('push.services', [])
         return fbLogin();
       }
     };
-    // return {
-    //   currentUser: function () {
-    //     return JSON.parse($window.localStorage['currentUser']);
-    //   },
-    //   get: function () {
-    //     var deferred = $q.defer();
-    //     $http.get('http://localhost:3000/').
-    //       success(function(data, status, headers, config) {
-    //         $window.localStorage['currentUser'] = JSON.stringify(data);
-    //         deferred.resolve(data);
-    //       }).
-    //       error(function(data, status, headers, config) {
-    //         console.log('error', data);
-    //         deferred.reject(data);
-    //       });
-    //     return deferred.promise;
-    //   }
-    // };
   })
   .factory('Workouts', function ($http, $q, $rootScope, loc) {
     function url(id) {
