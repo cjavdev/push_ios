@@ -14,10 +14,31 @@ $assertive:                       #ef473a !default;
 $royal:                           #886aea !default;
 $dark:                            #444 !default;
 */
-
 // The path for our ionicons font files, relative to the built CSS in www/css
+$balanced: #4EBF7E;
+$energized:  #038751;
+$calm: #04BFDB;
+$stable: #4177B2;
+$royal: #1337BA;
 $ionicons-font-path: "../lib/ionic/fonts" !default;
 
+body, html, * {
+  font-family: 'Bitter', helvetica;
+}
 // Include all of Ionic
 @import "www/lib/ionic/scss/ionic";
 
+.start-workout {
+  border-radius: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: $energized;
+  height: 200px;
+  width: 200px;
+  text-align: center;
+  vertical-align: middle;
+  position: relative;
+  padding-top: 35%;
+  font-weight: 700;
+  color: white;
+}

@@ -5,6 +5,10 @@ angular.module('push.controllers', [])
     $scope.workouts = workouts;
   });
 
+  $scope.startWorkout = function () {
+    console.log("clicke");
+  };
+
   $ionicModal.fromTemplateUrl('templates/login.html', function (modal) {
     $scope.loginModal = modal;
   }, {
