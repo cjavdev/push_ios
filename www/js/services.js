@@ -4,8 +4,10 @@ angular.module('push.services', [])
     function fbLogin () {
       var deferred = $q.defer();
       openFB.login(function (response) {
-        console.dir(response);
+        console.log('fb login success');
+        console.log(response);
         if(response.status === "connected") {
+          console.log('getting auth params');
           getFBAuthParams(response.authResponse).then(function (user) {
             deferred.resolve(user);
           });
@@ -23,10 +25,17 @@ angular.module('push.services', [])
       openFB.api({
         path: '/v1.0/me',
         success: function (response) {
+          console.log('getting /me success');
           response.authResponse = authResponse;
           pushbitLogin(response).then(function (user) {
+            console.log('getting pushbit login, success');
             deferred.resolve(user);
           });
+        },
+        error: function () {
+          console.log('error in getting /me');
+          console.log(arguments);
+          deferred.reject();
         }
       });
       return deferred.promise;

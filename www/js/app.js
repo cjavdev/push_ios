@@ -15,7 +15,8 @@ angular.module('push', ['ionic', 'push.controllers', 'push.services'])
     });
   })
   .constant('loc', {
-    apiBase: 'http://localhost:3000'
+    // apiBase: 'http://localhost:3000'
+    apiBase: 'http://www.pushbit.io'
   })
   .config(function ($stateProvider, $urlRouterProvider) {
     // Ionic uses AngularUI Router which uses the concept of states
