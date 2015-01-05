@@ -1,12 +1,12 @@
 /*global _, openFB, angular */
 angular.module('push.services', [])
   .factory('AuthenticationService', function ($q, $http, $window, $rootScope, loc) {
-    function fbLogin () {
+    function fbLogin() {
       var deferred = $q.defer();
       openFB.login(function (response) {
         console.log('fb login success');
         console.log(response);
-        if(response.status === "connected") {
+        if (response.status === "connected") {
           console.log('getting auth params');
           getFBAuthParams(response.authResponse).then(function (user) {
             deferred.resolve(user);
@@ -20,7 +20,7 @@ angular.module('push.services', [])
       return deferred.promise;
     }
 
-    function getFBAuthParams (authResponse) {
+    function getFBAuthParams(authResponse) {
       var deferred = $q.defer();
       openFB.api({
         path: '/v1.0/me',
@@ -41,15 +41,20 @@ angular.module('push.services', [])
       return deferred.promise;
     }
 
-    function pushbitLogin (loginParams) {
+    function pushbitLogin(loginParams) {
       var deferred = $q.defer();
       $http.post(loc.apiBase + '/session', loginParams).then(function (response) {
         console.dir(response);
+        updateHeaders(response.data);
         $window.localStorage['currentUser'] = JSON.stringify(response.data);
         deferred.resolve(response.data);
         $rootScope.$broadcast('event:auth-loginConfirmed');
       });
       return deferred.promise;
+    }
+
+    function updateHeaders(params) {
+      $http.defaults.headers.common['AuthToken-X'] = params.session_token;
     }
 
     function fbLogout() {
@@ -69,30 +74,54 @@ angular.module('push.services', [])
       }
     };
   })
-  .factory('Workouts', function ($http, $q, $rootScope, loc) {
+  .factory('Workouts', function ($http, $q, $rootScope, $state, loc) {
     function url(id) {
       if (id) {
-        return loc.apiBase + '/workouts/' + id + '.json';
+        return loc.apiBase + '/workouts/' + id;
       }
-      return loc.apiBase + '/workouts.json';
+      return loc.apiBase + '/workouts';
     }
 
-    function Workout (attrs) {
+    function Workout(attrs) {
       this.id = attrs.id;
       this.completed_date = attrs.completed_date;
       this.workout_sets = attrs.workout_sets;
     }
 
+    Workout.prototype.addSet = function (set) {
+      var dfd = $q.defer();
+      $http.post(url(this.id) + '/workout_sets', {
+        reps: set.reps
+      }).
+      then(function (response) {
+        dfd.resolve(response.data);
+      }, function (response) {
+        dfd.reject(response);
+      });
+      return dfd.promise;
+    };
+
+    Workout.prototype.complete = function () {
+      var dfd = $q.defer();
+      $http.put(url(this.id), {}).
+        then(function (response) {
+          dfd.resolve(response.data);
+        }, function (response) {
+          dfd.reject(response);
+        });
+      return dfd.promise;
+    };
+
     Workout.prototype.totalReps = function () {
       var reps = 0;
-      this.workout_sets.forEach(function(set) {
+      this.workout_sets.forEach(function (set) {
         reps += set.reps;
       });
       return reps;
     };
 
     Workout.prototype.completedAt = function () {
-      if(!this.completed_date) {
+      if (!this.completed_date) {
         return 'Incomplete';
       }
       return this.completed_date;
@@ -120,7 +149,19 @@ angular.module('push.services', [])
           dfd.reject(resp.data);
         });
         return dfd.promise;
-      }
+      },
+      create: function () {
+        var dfd = $q.defer();
+        $http.post(url(), {}).
+          then(function (response) {
+            dfd.resolve(new Workout(response.data));
+          }, function(response, status) {
+            $rootScope.$broadcast('event:auth-loginRequired', status);
+            $state.go('tab.dash');
+            dfd.reject(response)
+          });
+        return dfd.promise;
+      },
     };
   })
   .factory('Friends', function () {

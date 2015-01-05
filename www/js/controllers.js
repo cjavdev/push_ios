@@ -20,24 +20,46 @@ angular.module('push.controllers', [])
     $scope.loginModal.remove();
   });
 })
-.controller('WorkoutCtrl', function($scope, $state) {
+.controller('WorkoutCtrl', function($scope, $state, Workouts) {
+  Workouts.create().then(function (workout) {
+    console.log('workout created');
+    $scope.workout = workout;
+  }, function () {
+    console.log('uh on workout not created');
+  });
+
   $scope.sets = [];
-  $scope.count = 0;
+  $scope.reps = 0;
 
   $scope.push = function () {
-    $scope.count++;
+    $scope.reps++;
   };
 
+  function Set(reps) {
+    this.reps = reps;
+  }
+
   $scope.completeSet = function () {
-    $scope.sets.push($scope.count);
-    $scope.count = 0;
+    var set = new Set($scope.reps);
+    $scope.workout.addSet(set).then(function () {
+      $scope.sets.push(set);
+      $scope.reps = 0;
+    });
   };
 
   $scope.completeWorkout = function () {
-    if($scope.count > 0) {
-      $scope.sets.push($scope.count);
+    if($scope.reps > 0) {
+      var set = new Set($scope.reps);
+      $scope.workout.addSet(set).then(function () {
+        $scope.sets.push($scope.reps);
+        $scope.reps = 0;
+      });
     }
-    $state.go('tab.dash', {}, { reload: true, inherit: false });
+    $scope.workout.complete().then(function () {
+      $scope.sets = [];
+      $scope.reps = 0;
+      $state.go('tab.dash', {}, { reload: true, inherit: false });
+    });
   };
 })
 .controller('LoginCtrl', function($scope, AuthenticationService) {

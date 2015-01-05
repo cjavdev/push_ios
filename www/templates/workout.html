@@ -8,8 +8,13 @@
       </div>
     </div>
     <div class="pushup-count">
-      <p>{{ count }}</p>
+      <p>{{ reps }}</p>
     </div>
+    <ul>
+      <li ng-repeat="set in sets">
+        Set {{ $index + 1 }}: {{ set.reps }}
+      </li>
+    </ul>
   </ion-content>
   <ion-footer-bar class="bar-balanced">
     <button class="button button-clear" ng-click="completeSet()">
