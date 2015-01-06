@@ -1,28 +1,27 @@
-/*global angular, openFB, window, cordova */
-angular.module('push', ['ionic', 'push.controllers', 'push.services'])
-  .run(function ($ionicPlatform) {
-    openFB.init({ appId: '1389364367952791' });
-    $ionicPlatform.ready(function () {
-      // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
-      // for form inputs)
-      if (window.cordova && window.cordova.plugins.Keyboard) {
-        cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
-      }
-      if (window.StatusBar) {
-        // org.apache.cordova.statusbar required
-        StatusBar.styleDefault();
-      }
-    });
-  })
-  .constant('loc', {
-    apiBase: 'http://localhost:3000'
-    // apiBase: 'http://www.pushbit.io'
-  })
-  .config(function ($stateProvider, $urlRouterProvider) {
+/*globals PB, angular */
+
+angular.module('push.controllers', []);
+angular.module('push.services', []);
+
+PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
     // Ionic uses AngularUI Router which uses the concept of states
     // Learn more here: https://github.com/angular-ui/ui-router
     // Set up the various states which the app can be in.
+    //
     // Each state's controller can be found in controllers.js
+    // alternatively, register the interceptor via an anonymous factory
+    $httpProvider.interceptors.push(function($q, $rootScope) {
+      return {
+        'responseError': function(rejection) {
+           if(rejection.status === 403) {
+             console.log('Unauthorized');
+             $rootScope.$broadcast('event:auth-loginRequired', rejection);
+           }
+           return $q.reject(rejection);
+        }
+      };
+    });
+
     $stateProvider
       .state('workout', {
         url: '/workout',
@@ -48,15 +47,6 @@ angular.module('push', ['ionic', 'push.controllers', 'push.services'])
           'tab-friends': {
             templateUrl: 'templates/tab-friends.html',
             controller: 'FriendsCtrl'
-          }
-        }
-      })
-      .state('tab.friend-detail', {
-        url: '/friend/:friendId',
-        views: {
-          'tab-friends': {
-            templateUrl: 'templates/friend-detail.html',
-            controller: 'FriendDetailCtrl'
           }
         }
       })

@@ -11,6 +11,11 @@
     href='http://fonts.googleapis.com/css?family=Bitter:400,700,400italic'
     rel='stylesheet' type='text/css'>
     <link href="css/ionic.app.css" rel="stylesheet">
+    <script src="js/traceur.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script>
+      traceur.options.experimental = true;
+    </script>
 
     <!-- ionic/angularjs js -->
     <script src="lib/ionic/js/ionic.bundle.js"></script>
@@ -21,9 +26,7 @@
     <script src="js/lodash.js"></script>
 
     <!-- your app's js -->
-    <script src="js/app.js"></script>
-    <script src="js/controllers.js"></script>
-    <script src="js/services.js"></script>
+    <script src="js/all.js"></script>
   </head>
   <body ng-app="push">
     <!--
