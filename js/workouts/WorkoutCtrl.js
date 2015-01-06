@@ -1,29 +1,36 @@
+/*global angular */
 angular.module('push.controllers')
-  .controller('WorkoutCtrl', function($scope, $state, Workouts) {
-    Workouts.create().then(function (workout) {
-      console.log('workout created');
-      console.log(workout);
-      $scope.workout = workout;
-    }, function () {
-      console.log('uh on workout not created');
-    });
-
+  .controller('WorkoutCtrl', function($scope, $state, Workout, WorkoutSet) {
+    $scope.workout = null;
     $scope.sets = [];
     $scope.reps = 0;
+
+    // consider using this as a show page and only create
+    // a workout if it's visiting for a start workout
+    Workout
+      .create()
+      .then(function (workout) {
+        console.log('workout created');
+        console.log(workout);
+        $scope.workout = workout;
+      }, function () {
+        console.log('uhoh workout not created', arguments);
+      });
 
     $scope.push = function () {
       $scope.reps++;
     };
 
-    function Set(reps) {
-      this.reps = reps;
-    }
-
     $scope.completeSet = function () {
-      var set = new Set($scope.reps);
-      $scope.workout.addSet(set).then(function () {
+      var set = new WorkoutSet({
+        reps: $scope.reps,
+        workout_id: $scope.workout.get('id')
+      });
+
+      set.save().then((response) => {
         $scope.sets.push(set);
-        $scope.reps = 0;
+        $scope.workout.workout_sets.push(set);
+        $sope.reps = 0;
       });
     };
 

@@ -1,8 +1,11 @@
+/*global angular */
+
 angular.module('push.controllers')
-  .controller('AccountCtrl', function($scope, Users) {
+  .controller('AccountCtrl', function($scope, User) {
     $scope.logout = function () {
-      Users.logout();
+      User.logout();
     };
+
     $scope.settings = {
       enableFriends: true
     };

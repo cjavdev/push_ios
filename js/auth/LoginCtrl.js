@@ -1,8 +1,10 @@
+/*global angular */
+
 angular.module('push.controllers')
-  .controller('LoginCtrl', function($scope, $state, Users) {
+  .controller('LoginCtrl', function($scope, $state, User) {
     $scope.message = '';
     $scope.login = function () {
-      Users.login();
+      User.login();
     };
 
     $scope.$on('event:auth-loginRequired', function(e, rejection) {

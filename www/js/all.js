@@ -18,25 +18,22 @@ angular.module('push.services', []);
 PB.config(function($stateProvider, $urlRouterProvider, $httpProvider) {
   $httpProvider.interceptors.push(function($q, $rootScope) {
     return {'responseError': function(rejection) {
+        console.log('RESPONSE ERROR', rejection);
         if (rejection.status === 403) {
-          console.log('Unauthorized');
           $rootScope.$broadcast('event:auth-loginRequired', rejection);
         }
         return $q.reject(rejection);
       }};
   });
-  $stateProvider.state('workout', {
-    url: '/workout',
-    templateUrl: "templates/workout.html"
-  }).state('tab', {
+  $stateProvider.state('tab', {
     url: "/tab",
     abstract: true,
     templateUrl: "templates/tabs.html"
-  }).state('tab.dash', {
-    url: '/dash',
-    views: {'tab-dash': {
-        templateUrl: 'templates/tab-dash.html',
-        controller: 'DashCtrl'
+  }).state('tab.workouts', {
+    url: '/workouts',
+    views: {'tab-workouts': {
+        templateUrl: 'templates/tab-workouts.html',
+        controller: 'WorkoutsCtrl'
       }}
   }).state('tab.friends', {
     url: '/friends',
@@ -51,43 +48,88 @@ PB.config(function($stateProvider, $urlRouterProvider, $httpProvider) {
         controller: 'AccountCtrl'
       }}
   });
-  $urlRouterProvider.otherwise('/tab/dash');
+  $urlRouterProvider.otherwise('/tab/workouts');
 });
 
 "use strict";
-angular.module('push.controllers').controller('DashCtrl', function($scope, $state, $ionicModal, Workouts) {
-  $scope.workouts = [];
-  function setupWorkouts() {
-    Workouts.all().then(function(workouts) {
-      console.log('got all workouts');
-      console.log(workouts);
-      $scope.workouts = workouts;
+angular.module('push.services').factory('Model', function($http, $q, loc) {
+  return function(options) {
+    var url = loc.apiBase + options.path;
+    var Model = function Model(attrs) {
+      attrs = attrs || {};
+      this.attributes = {};
+      this.set(attrs);
+    };
+    ($traceurRuntime.createClass)(Model, {
+      set: function(attrs) {
+        for (var attr in attrs) {
+          this.attributes[attr] = attrs[attr];
+        }
+        return this;
+      },
+      get: function(key) {
+        return this.attributes[key];
+      },
+      parse: function(response) {
+        return response;
+      },
+      save: function() {
+        if (this.id) {
+          return this.update();
+        } else {
+          return this.create();
+        }
+      },
+      update: function() {
+        var $__0 = this;
+        var dfd = $q.defer();
+        $http.put(this.url(), this.attributes).then((function(response) {
+          $__0.set($__0.parse(response.data));
+          dfd.resolve($__0);
+        }), (function(response) {
+          dfd.reject($__0);
+        }));
+        return dfd.promise;
+      },
+      create: function() {
+        var $__0 = this;
+        var dfd = $q.defer();
+        $http.post(this.url(), this.attributes).then((function(response) {
+          $__0.set($__0.parse(response.data));
+          dfd.resolve($__0);
+        }), (function(response) {
+          dfd.reject($__0);
+        }));
+        return dfd.promise;
+      },
+      url: function() {
+        if (this.id) {
+          return url + this.id;
+        } else {
+          return url;
+        }
+      }
+    }, {});
+    Model.url = (function() {
+      return url;
     });
-  }
-  setupWorkouts();
-  console.log('setting up loginConfirmed event');
-  $scope.$on('event:auth-loginConfirmed', function() {
-    setupWorkouts();
-  });
-  $scope.startWorkout = function() {
-    $state.go('workout', {}, {
-      reload: true,
-      inherit: false
-    });
+    Model.all = function() {
+      return $http.get(url).then((function(response) {
+        return _.map(response.data, (function(data) {
+          return new Model(data);
+        }));
+      }));
+    };
+    Model.create = function(attributes) {
+      var model = new Model(attributes);
+      return model.save();
+    };
+    return Model;
   };
-  $ionicModal.fromTemplateUrl('templates/login.html', function(modal) {
-    $scope.loginModal = modal;
-  }, {
-    scope: $scope,
-    animation: 'slide-in-up'
-  });
-  $scope.$on('$destroy', function() {
-    $scope.loginModal.remove();
-  });
 });
 
 "use strict";
-angular.module('push.services').factory('Users', function($q, $http, $window, $rootScope, loc) {
+angular.module('push.services').factory('User', function($q, $http, $window, $rootScope, loc) {
   function fbLogin() {
     var dfd = $q.defer();
     openFB.login(function(response) {
@@ -156,10 +198,10 @@ angular.module('push.services').factory('Users', function($q, $http, $window, $r
 });
 
 "use strict";
-angular.module('push.controllers').controller('LoginCtrl', function($scope, $state, Users) {
+angular.module('push.controllers').controller('LoginCtrl', function($scope, $state, User) {
   $scope.message = '';
   $scope.login = function() {
-    Users.login();
+    User.login();
   };
   $scope.$on('event:auth-loginRequired', function(e, rejection) {
     $scope.loginModal.show();
@@ -182,66 +224,45 @@ angular.module('push.controllers').controller('LoginCtrl', function($scope, $sta
 });
 
 "use strict";
-angular.module('push.controllers').controller('AccountCtrl', function($scope, Users) {
+angular.module('push.controllers').controller('AccountCtrl', function($scope, User) {
   $scope.logout = function() {
-    Users.logout();
+    User.logout();
   };
   $scope.settings = {enableFriends: true};
 });
 
 "use strict";
-angular.module('push.services').factory('Friends', function($http, loc) {
-  return {
-    all: function() {
-      return $http.get(loc.apiBase + '/friendships');
-    },
-    inviteFriend: function(email) {
-      return $http.post(loc.apiBase + '/friend_requests', {email: email});
-    }
+angular.module('push.services').factory('Friend', function($http, Model, loc) {
+  var Friend = Model({path: '/friendships'});
+  Friend.inviteFriend = function(email) {
+    return $http.post(loc.apiBase + '/friend_requests', {email: email});
   };
+  return Friend;
 });
 
 "use strict";
-angular.module('push.services').factory('FriendRequests', function($q, $http, $rootScope, Users, loc) {
+angular.module('push.services').factory('FriendRequest', function($q, $http, $rootScope, Users, loc) {
   return {all: function() {
       return $http.get(loc.apiBase + '/friend_requests');
     }};
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friends, FriendRequests) {
+angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friend, FriendRequest) {
   $scope.friends = [];
-  $scope.friend_requests = [];
-  Friends.all().then(function(friends) {
+  Friend.all().then(function(friends) {
     $scope.friends = friends;
   }, function() {
     console.log('something went wrong when getting friends');
   });
-  FriendRequests.all().then(function(friend_requests) {
-    $scope.friend_requests = friend_requests;
-  }, function() {
-    console.log('something went wrong when showing friend requests');
-  });
-  $ionicModal.fromTemplateUrl('templates/friendships.html', function(modal) {
-    $scope.friendshipsModal = modal;
-  }, {
-    scope: $scope,
-    animation: 'slide-in-up'
-  });
-  $scope.showFriendships = function() {
-    $scope.friendshipsModal.show();
-  };
-  $scope.done = function() {
-    $scope.friendshipsModal.hide();
-  };
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, Friends) {
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, Friend) {
   $scope.friendEmail = '';
   $scope.inviteFriend = function(email) {
     console.log('inviting', email);
-    Friends.inviteFriend(email).then(function(friends) {
+    Friend.inviteFriend(email).then(function(friends) {
       $scope.friendEmail = '';
       $scope.message = 'Sent!';
     });
@@ -249,21 +270,20 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
 });
 
 "use strict";
-angular.module('push.services').factory('Workouts', function($http, $q, $rootScope, $state, loc) {
-  function url(id) {
-    if (id) {
-      return loc.apiBase + '/workouts/' + id;
+angular.module('push.services').factory('Workout', function($http, $q, Model, loc) {
+  var Workout = Model({path: '/workouts'});
+  Workout.prototype.parse = function(response) {
+    if (response.workout_sets) {
+      this.workout_sets = _.map(response.workout_sets, (function(s) {
+        return new WorkoutSet(s);
+      }));
+      delete response.workout_sets;
     }
-    return loc.apiBase + '/workouts';
-  }
-  function Workout(attrs) {
-    this.id = attrs.id;
-    this.completed_date = attrs.completed_date;
-    this.workout_sets = attrs.workout_sets;
-  }
+    return response;
+  };
   Workout.prototype.addSet = function(set) {
     var dfd = $q.defer();
-    $http.post(url(this.id) + '/workout_sets', {reps: set.reps}).then(function(response) {
+    $http.post(this.url() + '/workout_sets', {reps: set.reps}).then(function(response) {
       dfd.resolve(response.data);
     }, function(response) {
       dfd.reject(response);
@@ -281,76 +301,66 @@ angular.module('push.services').factory('Workouts', function($http, $q, $rootSco
   };
   Workout.prototype.totalReps = function() {
     var reps = 0;
-    this.workout_sets.forEach(function(set) {
+    this.get('workout_sets').forEach(function(set) {
       reps += set.reps;
     });
     return reps;
   };
   Workout.prototype.completedAt = function() {
-    if (!this.completed_date) {
+    if (!this.get('completed_date')) {
       return 'Incomplete';
     }
-    return this.completed_date;
+    return this.get('completed_date');
   };
-  return {
-    all: function() {
-      var dfd = $q.defer();
-      $http.get(url()).then(function(resp) {
-        var workouts = _.map(resp.data, function(w) {
-          return new Workout(w);
-        });
-        dfd.resolve(workouts);
-      }, function(resp) {
-        dfd.reject(resp.data);
-      });
-      return dfd.promise;
-    },
-    get: function(id) {
-      var dfd = $q.defer();
-      $http.get(url(id)).then(function(resp) {
-        dfd.resolve(resp.data);
-      }, function(resp) {
-        dfd.reject(resp.data);
-      });
-      return dfd.promise;
-    },
-    create: function() {
-      var dfd = $q.defer();
-      $http.post(url(), {}).then(function(response) {
-        dfd.resolve(new Workout(response.data));
-      }, function(response) {
-        dfd.reject(response);
-      });
-      return dfd.promise;
-    }
+  Workout.create = function() {
+    var dfd = $q.defer();
+    $http.post(Workout.url(), {}).then(function(response) {
+      dfd.resolve(new Workout(response.data));
+    }, function(response) {
+      dfd.reject(response);
+    });
+    return dfd.promise;
   };
+  return Workout;
 });
 
 "use strict";
+angular.module('push.services').factory('WorkoutSet', function(Model, Workout, loc) {
+  var WorkoutSet = Model({path: '/workout_sets'});
+  WorkoutSet.prototype.url = function() {
+    if (!this.id) {
+      return Workout.url() + this.workout_id + '/workout_sets';
+    }
+    return loc.apiBase + '/workout_sets' + this.id;
+  };
+  return WorkoutSet;
+});
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, Workouts) {
-  Workouts.create().then(function(workout) {
+angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, Workout, WorkoutSet) {
+  $scope.workout = null;
+  $scope.sets = [];
+  $scope.reps = 0;
+  Workout.create().then(function(workout) {
     console.log('workout created');
     console.log(workout);
     $scope.workout = workout;
   }, function() {
-    console.log('uh on workout not created');
+    console.log('uhoh workout not created', arguments);
   });
-  $scope.sets = [];
-  $scope.reps = 0;
   $scope.push = function() {
     $scope.reps++;
   };
-  function Set(reps) {
-    this.reps = reps;
-  }
   $scope.completeSet = function() {
-    var set = new Set($scope.reps);
-    $scope.workout.addSet(set).then(function() {
-      $scope.sets.push(set);
-      $scope.reps = 0;
+    var set = new WorkoutSet({
+      reps: $scope.reps,
+      workout_id: $scope.workout.get('id')
     });
+    set.save().then((function(response) {
+      $scope.sets.push(set);
+      $scope.workout.workout_sets.push(set);
+      $sope.reps = 0;
+    }));
   };
   $scope.completeWorkout = function() {
     if ($scope.reps > 0) {
@@ -369,6 +379,37 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
       });
     });
   };
+});
+
+"use strict";
+angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, $state, $ionicModal, Workout) {
+  $scope.workouts = [];
+  function setupWorkouts() {
+    Workout.all().then(function(workouts) {
+      console.log('got all workouts');
+      console.log(workouts);
+      $scope.workouts = workouts;
+    });
+  }
+  setupWorkouts();
+  $scope.$on('event:auth-loginConfirmed', function() {
+    setupWorkouts();
+  });
+  $scope.startWorkout = function() {
+    $state.go('workout', {}, {
+      reload: true,
+      inherit: false
+    });
+  };
+  $ionicModal.fromTemplateUrl('templates/login.html', function(modal) {
+    $scope.loginModal = modal;
+  }, {
+    scope: $scope,
+    animation: 'slide-in-up'
+  });
+  $scope.$on('$destroy', function() {
+    $scope.loginModal.remove();
+  });
 });
 
 //# sourceMappingURL=all.js.map

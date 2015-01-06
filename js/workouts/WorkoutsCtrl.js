@@ -1,9 +1,11 @@
 /*global angular */
+
 angular.module('push.controllers')
-  .controller('DashCtrl', function($scope, $state, $ionicModal, Workouts) {
+  .controller('WorkoutsCtrl', function($scope, $state, $ionicModal, Workout) {
     $scope.workouts = [];
+
     function setupWorkouts () {
-      Workouts.all().then(function (workouts) {
+      Workout.all().then(function (workouts) {
         console.log('got all workouts');
         console.log(workouts);
         $scope.workouts = workouts;
@@ -11,7 +13,7 @@ angular.module('push.controllers')
     }
 
     setupWorkouts();
-    console.log('setting up loginConfirmed event');
+
     $scope.$on('event:auth-loginConfirmed', function() {
       setupWorkouts();
     });

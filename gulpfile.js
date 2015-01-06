@@ -17,17 +17,18 @@ var paths = {
   scripts: [
     './js/app.js',
     './js/config.js',
-    './js/dash/DashCtrl.js',
-    './js/auth/Users.js',
+    './js/utils/Model.js',
+    './js/auth/User.js',
     './js/auth/LoginCtrl.js',
     './js/auth/AccountCtrl.js',
-    './js/friends/Friends.js',
-    './js/friends/FriendRequests.js',
+    './js/friends/Friend.js',
+    './js/friends/FriendRequest.js',
     './js/friends/FriendsCtrl.js',
     './js/friends/FriendRequestsCtrl.js',
-    './js/workouts/Workouts.js',
-    './js/workouts/WorkoutSets.js',
+    './js/workouts/Workout.js',
+    './js/workouts/WorkoutSet.js',
     './js/workouts/WorkoutCtrl.js',
+    './js/workouts/WorkoutsCtrl.js',
   ]
 };
 

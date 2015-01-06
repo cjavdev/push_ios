@@ -4,17 +4,11 @@ angular.module('push.controllers', []);
 angular.module('push.services', []);
 
 PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
-    // Ionic uses AngularUI Router which uses the concept of states
-    // Learn more here: https://github.com/angular-ui/ui-router
-    // Set up the various states which the app can be in.
-    //
-    // Each state's controller can be found in controllers.js
-    // alternatively, register the interceptor via an anonymous factory
     $httpProvider.interceptors.push(function($q, $rootScope) {
       return {
         'responseError': function(rejection) {
+          console.log('RESPONSE ERROR', rejection);
            if(rejection.status === 403) {
-             console.log('Unauthorized');
              $rootScope.$broadcast('event:auth-loginRequired', rejection);
            }
            return $q.reject(rejection);
@@ -23,21 +17,17 @@ PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
     });
 
     $stateProvider
-      .state('workout', {
-        url: '/workout',
-        templateUrl: "templates/workout.html",
-      })
       .state('tab', {
         url: "/tab",
         abstract: true,
         templateUrl: "templates/tabs.html"
       })
-      .state('tab.dash', {
-        url: '/dash',
+      .state('tab.workouts', {
+        url: '/workouts',
         views: {
-          'tab-dash': {
-            templateUrl: 'templates/tab-dash.html',
-            controller: 'DashCtrl'
+          'tab-workouts': {
+            templateUrl: 'templates/tab-workouts.html',
+            controller: 'WorkoutsCtrl'
           }
         }
       })
@@ -60,5 +50,5 @@ PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
         }
       });
 
-    $urlRouterProvider.otherwise('/tab/dash');
+    $urlRouterProvider.otherwise('/tab/workouts');
   });

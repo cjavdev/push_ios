@@ -1,6 +1,6 @@
 /*global angular,openFB */
 angular.module('push.services')
-  .factory('Users', function ($q, $http, $window, $rootScope, loc) {
+  .factory('User', function ($q, $http, $window, $rootScope, loc) {
     function fbLogin() {
       var dfd = $q.defer();
       openFB.login(function (response) {
