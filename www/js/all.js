@@ -1,5 +1,5 @@
 "use strict";
-var dependencies = ['ionic', 'push.controllers', 'push.services'];
+var dependencies = ['ionic', 'push.controllers', 'push.services', 'push.filters'];
 window.PB = angular.module('push', dependencies).run(function($ionicPlatform) {
   openFB.init({appId: '1389364367952791'});
   $ionicPlatform.ready(function() {
@@ -15,16 +15,18 @@ window.PB = angular.module('push', dependencies).run(function($ionicPlatform) {
 "use strict";
 angular.module('push.controllers', []);
 angular.module('push.services', []);
-PB.config(function($stateProvider, $urlRouterProvider, $httpProvider) {
+angular.module('push.filters', []);
+PB.config(function($stateProvider, $urlRouterProvider, $httpProvider, $windowProvider) {
   $httpProvider.interceptors.push(function($q, EventBus) {
     return {'responseError': function(rejection) {
-        console.log('RESPONSE ERROR', rejection);
         if (rejection.status === 403) {
           EventBus.trigger('loginRequired', rejection);
         }
         return $q.reject(rejection);
       }};
   });
+  var $window = $windowProvider.$get();
+  $httpProvider.defaults.headers.common['AuthToken-X'] = $window.localStorage.authToken;
   $stateProvider.state('workout', {
     url: "/workout/:id",
     templateUrl: "templates/workout.html"
@@ -68,17 +70,34 @@ angular.module('push.controllers').controller('BaseCtrl', function($scope, $ioni
 });
 
 "use strict";
-angular.module('push.services').factory('Model', function($http, $q, loc) {
+angular.module('push.filters').filter('reverse', function() {
+  return function(items) {
+    return items.slice().reverse();
+  };
+});
+
+"use strict";
+angular.module('push.services').factory('Model', function($http, $q, $window, loc) {
   return function(options) {
-    var url = loc.apiBase + options.path;
+    var path = options.path;
+    var url = loc.apiBase + path;
     var Model = function Model(attrs) {
+      this.setup.apply(this, arguments);
       attrs = attrs || {};
       this.attributes = {};
-      this.set(attrs);
+      this.set(this.parse(attrs));
       this.initialize.apply(this, arguments);
     };
     ($traceurRuntime.createClass)(Model, {
+      get id() {
+        return this.attributes.id;
+      },
       initialize: function() {},
+      setup: function() {},
+      dummy: function() {
+        console.log('calling dummy');
+        return "dummy";
+      },
       set: function(attrs) {
         for (var attr in attrs) {
           this.attributes[attr] = attrs[attr];
@@ -93,8 +112,10 @@ angular.module('push.services').factory('Model', function($http, $q, loc) {
       },
       save: function() {
         if (this.id) {
+          console.log('updating!', this.attributes);
           return this.update();
         } else {
+          console.log('creating!', this.attributes);
           return this.create();
         }
       },
@@ -122,7 +143,7 @@ angular.module('push.services').factory('Model', function($http, $q, loc) {
       },
       url: function() {
         if (this.id) {
-          return url + this.id;
+          return url + '/' + this.id;
         } else {
           return url;
         }
@@ -131,15 +152,39 @@ angular.module('push.services').factory('Model', function($http, $q, loc) {
     Model.url = (function() {
       return url;
     });
+    var _all = [];
+    function readAllLocal() {
+      if ($window.localStorage[path]) {
+        var attrs = JSON.parse($window.localStorage[path]);
+        _all = _.map(attrs, (function(attr) {
+          return new Model(attr);
+        }));
+      }
+    }
+    function writeAllLocal(attrs) {
+      $window.localStorage[path] = JSON.stringify(attrs);
+    }
+    Model.ids = function() {
+      return _.map(_all, (function(model) {
+        return model.id;
+      }));
+    };
     Model.all = function() {
-      return $http.get(url).then((function(response) {
-        return _.map(response.data, (function(data) {
-          return new Model(data);
+      readAllLocal();
+      var ids = Model.ids();
+      $http.get(url, {cache: true}).then((function(response) {
+        writeAllLocal(response.data);
+        _.each(response.data, (function(data) {
+          if (!_.contains(ids, data.id)) {
+            _all.push(new Model(data));
+          }
         }));
       }));
+      return _all;
     };
     Model.create = function(attributes) {
       var model = new Model(attributes);
+      _all.push(model);
       return model.save();
     };
     return Model;
@@ -173,6 +218,7 @@ angular.module('push.services').factory('EventBus', function() {
 "use strict";
 angular.module('push.services').factory('User', function($q, $http, $window, EventBus, loc) {
   function updateHeaders(params) {
+    $window.localStorage.authToken = params.session_token;
     $http.defaults.headers.common['AuthToken-X'] = params.session_token;
   }
   function saveUser(params) {
@@ -223,11 +269,9 @@ angular.module('push.services').factory('User', function($q, $http, $window, Eve
   }
   function fbLogout() {
     var dfd = $q.defer();
-    openFB.logout(function() {
-      EventBus.trigger('loginRequired');
-      EventBus.trigger('authChange');
-      dfd.resolve();
-    });
+    EventBus.trigger('loginRequired');
+    EventBus.trigger('authChange');
+    dfd.resolve();
     return dfd.promise;
   }
   return {
@@ -235,6 +279,7 @@ angular.module('push.services').factory('User', function($q, $http, $window, Eve
       return fbLogin();
     },
     logout: function() {
+      $window.localStorage.removeItem('authToken');
       return fbLogout();
     },
     currentUser: currentUser
@@ -266,10 +311,9 @@ angular.module('push.controllers').controller('LoginCtrl', function($scope, $sta
 
 "use strict";
 angular.module('push.controllers').controller('AccountCtrl', function($scope, User) {
-  $scope.logout = function() {
+  $scope.logout = (function() {
     User.logout();
-  };
-  $scope.settings = {enableFriends: true};
+  });
 });
 
 "use strict";
@@ -311,13 +355,14 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
 });
 
 "use strict";
-angular.module('push.services').factory('Workout', function($http, $q, Model, loc) {
+angular.module('push.services').factory('Workout', function($http, $q, Model, WorkoutSet, loc) {
   var Workout = Model({path: '/workouts'});
-  Workout.prototype.initialize = function() {
+  Workout.prototype.setup = function() {
     this.workout_sets = [];
   };
   Workout.prototype.parse = function(response) {
     if (response.workout_sets) {
+      console.log('response has workout_sets');
       this.workout_sets = _.map(response.workout_sets, (function(s) {
         return new WorkoutSet(s);
       }));
@@ -325,20 +370,15 @@ angular.module('push.services').factory('Workout', function($http, $q, Model, lo
     }
     return response;
   };
-  Workout.prototype.addSet = function(set) {
-    var dfd = $q.defer();
-    $http.post(this.url() + '/workout_sets', {reps: set.reps}).then(function(response) {
-      dfd.resolve(response.data);
-    }, function(response) {
-      dfd.reject(response);
-    });
-    return dfd.promise;
-  };
   Workout.prototype.totalReps = function() {
     var reps = 0;
-    this.get('workout_sets').forEach(function(set) {
-      reps += set.reps;
-    });
+    for (var $__0 = this.workout_sets[$traceurRuntime.toProperty(Symbol.iterator)](),
+        $__1; !($__1 = $__0.next()).done; ) {
+      var set = $__1.value;
+      {
+        reps += set.get('reps');
+      }
+    }
     return reps;
   };
   Workout.prototype.completedAt = function() {
@@ -347,24 +387,15 @@ angular.module('push.services').factory('Workout', function($http, $q, Model, lo
     }
     return this.get('completed_date');
   };
-  Workout.create = function() {
-    var dfd = $q.defer();
-    $http.post(Workout.url(), {}).then(function(response) {
-      dfd.resolve(new Workout(response.data));
-    }, function(response) {
-      dfd.reject(response);
-    });
-    return dfd.promise;
-  };
   return Workout;
 });
 
 "use strict";
-angular.module('push.services').factory('WorkoutSet', function(Model, Workout, loc) {
+angular.module('push.services').factory('WorkoutSet', function(Model, loc) {
   var WorkoutSet = Model({path: '/workout_sets'});
   WorkoutSet.prototype.url = function() {
     if (!this.id) {
-      return Workout.url() + '/' + this.get('workout_id') + '/workout_sets';
+      return loc.apiBase + '/workouts/' + this.get('workout_id') + '/workout_sets';
     }
     return loc.apiBase + '/workout_sets' + this.id;
   };
@@ -372,7 +403,7 @@ angular.module('push.services').factory('WorkoutSet', function(Model, Workout, l
 });
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, $rootScope, $stateParams, EventBus, Workout, WorkoutSet) {
+angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, $stateParams, EventBus, Workout, WorkoutSet) {
   $scope.sets = [];
   $scope.reps = 0;
   $scope.workout = null;
@@ -406,20 +437,25 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
       reps: $scope.reps,
       workout_id: $scope.workout.get('id')
     });
+    $scope.sets.push(set.attributes);
+    $scope.workout.workout_sets.push(set);
     set.save().then((function(response) {
-      $scope.sets.push(set);
-      $scope.workout.workout_sets.push(set);
       $scope.reps = 0;
+      console.log('workout.workout_sets: ', $scope.workout.workout_sets);
     }));
   };
   $scope.completeWorkout = function() {
     if ($scope.reps > 0) {
-      var set = new Set($scope.reps);
-      $scope.workout.addSet(set).then((function() {
-        $scope.sets.push($scope.reps);
-        $scope.reps = 0;
-      }));
+      var set = new WorkoutSet({
+        reps: $scope.reps,
+        workout_id: $scope.workout.get('id')
+      });
+      $scope.sets.push(set);
+      $scope.workout.workout_sets.push(set);
+      $scope.reps = 0;
+      set.save();
     }
+    $scope.workout.set({completed_date: new Date()});
     $scope.workout.save().then((function() {
       $scope.sets = [];
       $scope.reps = 0;
@@ -432,28 +468,14 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
 });
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, $state, $ionicModal, Workout) {
+angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, EventBus, Workout) {
   $scope.workouts = [];
   function setupWorkouts() {
-    Workout.all().then(function(workouts) {
-      console.log('got all workouts');
-      console.log(workouts);
-      $scope.workouts = workouts;
-    });
+    console.log('setting up workouts');
+    $scope.workouts = Workout.all();
   }
   setupWorkouts();
-  $scope.$on('event:auth-loginConfirmed', function() {
-    setupWorkouts();
-  });
-  $ionicModal.fromTemplateUrl('templates/login.html', function(modal) {
-    $scope.loginModal = modal;
-  }, {
-    scope: $scope,
-    animation: 'slide-in-up'
-  });
-  $scope.$on('$destroy', function() {
-    $scope.loginModal.remove();
-  });
+  EventBus.on('loginCompleted', setupWorkouts);
 });
 
 //# sourceMappingURL=all.js.map

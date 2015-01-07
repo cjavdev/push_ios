@@ -1,10 +1,12 @@
 /*global angular, openFB, window, cordova */
 
-var dependencies = ['ionic', 'push.controllers', 'push.services'];
+var dependencies = ['ionic', 'push.controllers', 'push.services', 'push.filters'];
 
 window.PB = angular.module('push', dependencies)
   .run(function ($ionicPlatform) {
-    openFB.init({ appId: '1389364367952791' });
+    openFB.init({
+      appId: '1389364367952791'
+    });
 
     $ionicPlatform.ready(function () {
       // Hide the accessory bar by default (remove this to show the
@@ -23,4 +25,3 @@ window.PB = angular.module('push', dependencies)
     // apiBase: 'http://localhost:3000'
     apiBase: 'http://www.pushbit.io'
   });
-

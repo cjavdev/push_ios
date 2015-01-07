@@ -2,6 +2,7 @@
 angular.module('push.services')
   .factory('User', function ($q, $http, $window, EventBus, loc) {
     function updateHeaders(params) {
+      $window.localStorage.authToken = params.session_token;
       $http.defaults.headers.common['AuthToken-X'] = params.session_token;
     }
 
@@ -63,11 +64,11 @@ angular.module('push.services')
 
     function fbLogout() {
       var dfd = $q.defer();
-      openFB.logout(function () {
-        EventBus.trigger('loginRequired');
-        EventBus.trigger('authChange');
-        dfd.resolve();
-      });
+      // openFB.logout(function () {
+      EventBus.trigger('loginRequired');
+      EventBus.trigger('authChange');
+      dfd.resolve();
+      // });
       return dfd.promise;
     }
 
@@ -76,6 +77,7 @@ angular.module('push.services')
         return fbLogin();
       },
       logout: function () {
+        $window.localStorage.removeItem('authToken');
         return fbLogout();
       },
       currentUser: currentUser

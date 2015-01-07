@@ -1,18 +1,32 @@
 /*global _, angular */
 angular.module('push.services')
-  .factory('Model', function ($http, $q, loc) {
+  .factory('Model', function ($http, $q, $window, loc) {
     return function (options) {
-      var url = loc.apiBase + options.path;
+      var path = options.path;
+      var url = loc.apiBase + path;
 
       class Model {
         constructor(attrs) {
+          this.setup.apply(this, arguments);
           attrs = attrs || {};
           this.attributes = {};
-          this.set(attrs);
+          this.set(this.parse(attrs));
           this.initialize.apply(this, arguments);
         }
 
+        get id() {
+          return this.attributes.id;
+        }
+
         initialize() {
+        }
+
+        setup() {
+        }
+
+        dummy() {
+          console.log('calling dummy');
+          return "dummy";
         }
 
         set(attrs) {
@@ -32,8 +46,10 @@ angular.module('push.services')
 
         save() {
           if(this.id) {
+            console.log('updating!', this.attributes);
             return this.update();
           } else {
+            console.log('creating!', this.attributes);
             return this.create();
           }
         }
@@ -66,7 +82,7 @@ angular.module('push.services')
 
         url() {
           if(this.id) {
-            return url + this.id;
+            return url + '/' + this.id;
           } else {
             return url;
           }
@@ -75,18 +91,46 @@ angular.module('push.services')
 
       Model.url = () => { return url; };
 
+      var _all = [];
+
+      function readAllLocal() {
+        if($window.localStorage[path]) {
+          var attrs = JSON.parse($window.localStorage[path]);
+          _all = _.map(attrs, (attr) => { return new Model(attr) });
+        }
+      }
+
+      function writeAllLocal(attrs) {
+        $window.localStorage[path] = JSON.stringify(attrs);
+      }
+
+      Model.ids = function () {
+        return _.map(_all, (model) => { return model.id });
+      };
+
       Model.all = function () {
-        return $http.get(url).then((response) => {
-          return _.map(response.data, (data) => {
-            return new Model(data);
+        readAllLocal();
+        var ids = Model.ids();
+
+        $http.get(url, { cache: true }).then((response) => {
+          writeAllLocal(response.data);
+
+          _.each(response.data, (data) => {
+            if(!_.contains(ids, data.id)) {
+              _all.push(new Model(data));
+            }
           });
         });
+
+        return _all;
       };
 
       Model.create = function (attributes) {
         var model = new Model(attributes);
+        _all.push(model);
         return model.save();
       };
+
       return Model;
     };
   });

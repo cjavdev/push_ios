@@ -18,6 +18,7 @@ var paths = {
     './js/app.js',
     './js/config.js',
     './js/base/BaseCtrl.js',
+    './js/utils/filters.js',
     './js/utils/Model.js',
     './js/utils/EventBus.js',
     './js/auth/User.js',
