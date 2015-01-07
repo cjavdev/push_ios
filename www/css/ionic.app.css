@@ -7039,12 +7039,16 @@ a.button {
   color: white; }
 
 .push {
+  opacity: 1;
+  visibility: visible;
   -webkit-transition: all 1s ease, height 1s ease;
   -moz-transition: all 1s ease, height 1s ease;
   -o-transition: all 1s ease, height 1s ease;
   transition: all 1s ease, height 1s ease; }
 
 .pulse {
+  -webkit-transform: scale(1.5) rotate(25deg);
+  -moz-transform: scale(1.5) rotate(25deg);
   transform: scale(1.5) rotate(25deg); }
 
 .pushup-count {

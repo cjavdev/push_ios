@@ -10,13 +10,14 @@
       </ion-item>
     </ion-list>
     <ion-list>
-      <ion-item class="item-avatar" ng-repeat="friend2 in
-      friend_requests" type="item-text-wrap"
-      href="#/tab/friend/{{friend2.id}}">
-        <img ng-src="{{friend2.face}}">
-        <h2>{{friend2.name}}</h2>
-        <button class="button">
-          Approve
+      <ion-item class="item-avatar item-button-right" ng-repeat="request in requests" type="item-text-wrap">
+        <img src="http://graph.facebook.com/{{ request.get('sender').fbid }}/picture?type=normal">
+        <h2>
+          {{ request.get('sender').f_name }}
+          {{ request.get('sender').l_name }}
+        </h2>
+        <button class="button button-energized">
+          Accept
         </button>
       </ion-item>
     </ion-list>

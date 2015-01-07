@@ -17,5 +17,17 @@
         </button>
       </div>
     </form>
+    <ion-list>
+      <ion-item class="item-thumbnail-left item-button-right" ng-repeat="contact in contacts">
+        <img src="http://graph.facebook.com/{{ contact.id }}/picture?type=normal">
+        <h2>{{ contact.name }}</h2>
+        <button disabled ng-show="pending(contact.id)" class="button button-energized" ng-click="challengeContact(contact)">
+          <i>Pending</i>
+        </button>
+        <button ng-hide="pending(contact.id)" class="button button-energized" ng-click="challengeContact(contact)">
+          Challenge
+        </button>
+      </ion-item>
+    </ion-list>
   </ion-content>
 </div>

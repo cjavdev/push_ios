@@ -77,6 +77,35 @@ angular.module('push.filters').filter('reverse', function() {
 });
 
 "use strict";
+angular.module('push.services').service('Contacts', function($q) {
+  var formatContact = function(contact) {
+    var primaryPhoneNumber = '';
+    if (contact.phoneNumbers[0]) {
+      primaryPhoneNumber = contact.phoneNumbers[0].value;
+    }
+    return {
+      "displayName": contact.name.formatted || contact.name.givenName + " " + contact.name.familyName || "Mystery Person",
+      "emails": contact.emails || [],
+      "phones": contact.phoneNumbers || [],
+      "primaryPhoneNumber": primaryPhoneNumber,
+      "photos": contact.photos || []
+    };
+  };
+  function pickContact() {
+    var dfd = $q.defer();
+    if (navigator && navigator.contacts) {
+      navigator.contacts.pickContact(function(contact) {
+        dfd.resolve(formatContact(contact));
+      });
+    } else {
+      dfd.reject("Bummer. No contacts in desktop browser");
+    }
+    return dfd.promise;
+  }
+  return {pickContact: pickContact};
+});
+
+"use strict";
 angular.module('push.services').factory('Model', function($http, $q, $window, loc) {
   return function(options) {
     var path = options.path;
@@ -326,25 +355,76 @@ angular.module('push.services').factory('Friend', function($http, Model, loc) {
 });
 
 "use strict";
-angular.module('push.services').factory('FriendRequest', function($q, $http, $rootScope, Users, loc) {
-  return {all: function() {
-      return $http.get(loc.apiBase + '/friend_requests');
-    }};
+angular.module('push.services').factory('FriendRequest', function(Model) {
+  var FriendRequest = Model({path: '/friend_requests'});
+  FriendRequest.createForContact = function(contact) {
+    var fbid = contact.id;
+    var request = new FriendRequest({fbid: fbid});
+    return request.save();
+  };
+  return FriendRequest;
+}).factory('SentFriendRequest', function(Model) {
+  var SentFriendRequest = Model({path: '/friend_requests?type=sent'});
+  SentFriendRequest.allFbids = function() {
+    return _.map(SentFriendRequest.all(), (function(r) {
+      return r.get('recipient').fbid;
+    }));
+  };
+  return SentFriendRequest;
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friend, FriendRequest) {
+angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friend, FriendRequest, SentFriendRequest, Contacts) {
   $scope.friends = [];
-  Friend.all().then(function(friends) {
-    $scope.friends = friends;
-  }, function() {
-    console.log('something went wrong when getting friends');
+  $scope.friends = Friend.all();
+  $scope.contacts = [{
+    Name: 'name',
+    Title: 'title',
+    Id: 1
+  }];
+  SentFriendRequest.all();
+  $scope.requests = FriendRequest.all();
+  console.log($scope.requests);
+  $ionicModal.fromTemplateUrl('templates/friendships.html', function(modal) {
+    $scope.friendshipsModal = modal;
+  }, {
+    scope: $scope,
+    animation: 'slide-in-up'
   });
+  $scope.showFriendships = function() {
+    $scope.friendshipsModal.show();
+  };
+  $scope.done = function() {
+    $scope.friendshipsModal.hide();
+  };
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, Friend) {
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, FriendRequest, SentFriendRequest) {
   $scope.friendEmail = '';
+  $scope.message = '';
+  $scope.contacts = [];
+  var pendingRequestIds = SentFriendRequest.allFbids();
+  $scope.pending = function(id) {
+    return _.contains(pendingRequestIds, id);
+  };
+  openFB.api({
+    path: '/v2.2/me/friends',
+    success: function(response) {
+      console.log('getting fb friends: ', response.data);
+      $scope.contacts = response.data;
+    },
+    error: function(response) {
+      console.log('err getting FB friends!', response);
+      if (response.code === 190) {
+        EventBus.trigger('loginRequired');
+      }
+    }
+  });
+  $scope.challengeContact = function(contact) {
+    pendingRequestIds.push(contact.id);
+    FriendRequest.createForContact(contact);
+  };
   $scope.inviteFriend = function(email) {
     console.log('inviting', email);
     Friend.inviteFriend(email).then(function(friends) {
