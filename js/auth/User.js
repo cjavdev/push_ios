@@ -1,20 +1,28 @@
 /*global angular,openFB */
 angular.module('push.services')
-  .factory('User', function ($q, $http, $window, $rootScope, loc) {
-    function fbLogin() {
+  .factory('User', function ($q, $http, $window, EventBus, loc) {
+    function updateHeaders(params) {
+      $http.defaults.headers.common['AuthToken-X'] = params.session_token;
+    }
+
+    function saveUser(params) {
+      $window.localStorage.currentUser = JSON.stringify(params);
+    }
+
+    function currentUser() {
+      return JSON.parse($window.localStorage.currentUser);
+    }
+
+    function pushbitLogin(loginParams) {
       var dfd = $q.defer();
-      openFB.login(function (response) {
-        if (response.status === "connected") {
-          getFBAuthParams(response.authResponse).
-            then(function (user) {
-              dfd.resolve(user);
-            });
-        } else {
-          dfd.reject(response.status);
-        }
-      }, {
-        scope: 'email,user_friends,public_profile'
-      });
+      $http.post(loc.apiBase + '/session', loginParams).
+        then(function (response) {
+          updateHeaders(response.data);
+          saveUser(response.data);
+          dfd.resolve(response.data);
+          EventBus.trigger('loginCompleted');
+          EventBus.trigger('authChange');
+        });
       return dfd.promise;
     }
 
@@ -36,34 +44,28 @@ angular.module('push.services')
       return dfd.promise;
     }
 
-    function saveUser(params) {
-      $window.localStorage['currentUser'] = JSON.stringify(params);
-    }
-
-    function currentUser() {
-      return JSON.parse($window.localStorage['currentUser']);
-    }
-
-    function pushbitLogin(loginParams) {
-      var deferred = $q.defer();
-      $http.post(loc.apiBase + '/session', loginParams).
-        then(function (response) {
-          updateHeaders(response.data);
-          saveUser(response.data);
-          deferred.resolve(response.data);
-          $rootScope.$broadcast('event:auth-loginConfirmed');
-        });
-      return deferred.promise;
-    }
-
-    function updateHeaders(params) {
-      $http.defaults.headers.common['AuthToken-X'] = params.session_token;
+    function fbLogin() {
+      var dfd = $q.defer();
+      openFB.login(function (response) {
+        if (response.status === "connected") {
+          getFBAuthParams(response.authResponse).
+            then(function (user) {
+              dfd.resolve(user);
+            });
+        } else {
+          dfd.reject(response.status);
+        }
+      }, {
+        scope: 'email,user_friends,public_profile'
+      });
+      return dfd.promise;
     }
 
     function fbLogout() {
       var dfd = $q.defer();
       openFB.logout(function () {
-        $rootScope.$broadcast('event:auth-loginRequired');
+        EventBus.trigger('loginRequired');
+        EventBus.trigger('authChange');
         dfd.resolve();
       });
       return dfd.promise;

@@ -1,28 +1,25 @@
 /*global angular */
 
 angular.module('push.controllers')
-  .controller('LoginCtrl', function($scope, $state, User) {
+  .controller('LoginCtrl', function($scope, $state, User, EventBus) {
     $scope.message = '';
     $scope.login = function () {
       User.login();
     };
 
-    $scope.$on('event:auth-loginRequired', function(e, rejection) {
+    EventBus.on('loginRequired', function(e, rejection) {
       $scope.loginModal.show();
     });
 
-    $scope.$on('event:auth-loginConfirmed', function() {
-      console.log('login confirmed');
+    EventBus.on('loginCompleted', function() {
       $scope.loginModal.hide();
     });
 
-    $scope.$on('event:auth-loginFailed', function (e, status) {
-      console.log('login failed');
+    EventBus.on('loginFailed', function (e, status) {
       $scope.message = "Login Failed";
     });
 
-    $scope.$on('event:auth-logoutComplete', function() {
-      console.log('login complete');
+    EventBus.on('logoutCompleted', function() {
       $state.go('tab.dash', {}, { reload: true, inherit: false });
     });
   });

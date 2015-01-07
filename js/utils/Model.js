@@ -9,6 +9,10 @@ angular.module('push.services')
           attrs = attrs || {};
           this.attributes = {};
           this.set(attrs);
+          this.initialize.apply(this, arguments);
+        }
+
+        initialize() {
         }
 
         set(attrs) {

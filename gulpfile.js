@@ -17,7 +17,9 @@ var paths = {
   scripts: [
     './js/app.js',
     './js/config.js',
+    './js/base/BaseCtrl.js',
     './js/utils/Model.js',
+    './js/utils/EventBus.js',
     './js/auth/User.js',
     './js/auth/LoginCtrl.js',
     './js/auth/AccountCtrl.js',

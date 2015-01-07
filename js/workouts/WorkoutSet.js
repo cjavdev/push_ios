@@ -5,7 +5,7 @@ angular.module('push.services')
 
     WorkoutSet.prototype.url = function () {
       if(!this.id) {
-        return Workout.url() + this.workout_id + '/workout_sets';
+        return Workout.url() + '/' + this.get('workout_id') + '/workout_sets';
       }
       return loc.apiBase + '/workout_sets' + this.id;
     };

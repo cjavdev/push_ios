@@ -3,6 +3,10 @@ angular.module('push.services')
   .factory('Workout', function ($http, $q, Model, loc) {
     var Workout = Model({ path: '/workouts' });
 
+    Workout.prototype.initialize = function () {
+      this.workout_sets = [];
+    };
+
     Workout.prototype.parse = function (response) {
       if(response.workout_sets) {
         this.workout_sets = _.map(response.workout_sets, (s) => {
@@ -23,17 +27,6 @@ angular.module('push.services')
       }, function (response) {
         dfd.reject(response);
       });
-      return dfd.promise;
-    };
-
-    Workout.prototype.complete = function () {
-      var dfd = $q.defer();
-      $http.put(url(this.id), {}).
-        then(function (response) {
-          dfd.resolve(response.data);
-        }, function (response) {
-          dfd.reject(response);
-        });
       return dfd.promise;
     };
 

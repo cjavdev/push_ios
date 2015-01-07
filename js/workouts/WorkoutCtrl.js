@@ -1,21 +1,37 @@
 /*global angular */
 angular.module('push.controllers')
-  .controller('WorkoutCtrl', function($scope, $state, Workout, WorkoutSet) {
-    $scope.workout = null;
+  .controller('WorkoutCtrl', function($scope, $state, $rootScope, $stateParams, EventBus, Workout, WorkoutSet) {
     $scope.sets = [];
     $scope.reps = 0;
+    $scope.workout = null;
 
-    // consider using this as a show page and only create
-    // a workout if it's visiting for a start workout
-    Workout
-      .create()
-      .then(function (workout) {
-        console.log('workout created');
-        console.log(workout);
-        $scope.workout = workout;
-      }, function () {
-        console.log('uhoh workout not created', arguments);
-      });
+    function getWorkout(id) {
+      console.log('Getting Workout');
+      Workout.get(id);
+    }
+
+    function createWorkout() {
+      console.log('Creating Workout');
+      Workout
+        .create()
+        .then(function (workout) {
+          $scope.workout = workout;
+          console.log('workout created', workout);
+        }, function () {
+          console.log('uhoh workout not created', arguments);
+        });
+    }
+
+    function setupWorkout() {
+      if($stateParams.id === "new") {
+        createWorkout();
+      } else {
+        getWorkout($stateParams.id);
+      }
+    }
+
+    setupWorkout();
+    EventBus.on('authChange', setupWorkout);
 
     $scope.push = function () {
       $scope.reps++;
@@ -30,23 +46,22 @@ angular.module('push.controllers')
       set.save().then((response) => {
         $scope.sets.push(set);
         $scope.workout.workout_sets.push(set);
-        $sope.reps = 0;
+        $scope.reps = 0;
       });
     };
 
     $scope.completeWorkout = function () {
       if($scope.reps > 0) {
         var set = new Set($scope.reps);
-        $scope.workout.addSet(set).then(function () {
+        $scope.workout.addSet(set).then(() => {
           $scope.sets.push($scope.reps);
           $scope.reps = 0;
         });
       }
-      $scope.workout.complete().then(function () {
+      $scope.workout.save().then(() => {
         $scope.sets = [];
         $scope.reps = 0;
-        $state.go('tab.dash', {}, { reload: true, inherit: false });
+        $state.go('tab.workouts', {}, { reload: true, inherit: false });
       });
     };
   });
-

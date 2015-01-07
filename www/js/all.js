@@ -16,16 +16,19 @@ window.PB = angular.module('push', dependencies).run(function($ionicPlatform) {
 angular.module('push.controllers', []);
 angular.module('push.services', []);
 PB.config(function($stateProvider, $urlRouterProvider, $httpProvider) {
-  $httpProvider.interceptors.push(function($q, $rootScope) {
+  $httpProvider.interceptors.push(function($q, EventBus) {
     return {'responseError': function(rejection) {
         console.log('RESPONSE ERROR', rejection);
         if (rejection.status === 403) {
-          $rootScope.$broadcast('event:auth-loginRequired', rejection);
+          EventBus.trigger('loginRequired', rejection);
         }
         return $q.reject(rejection);
       }};
   });
-  $stateProvider.state('tab', {
+  $stateProvider.state('workout', {
+    url: "/workout/:id",
+    templateUrl: "templates/workout.html"
+  }).state('tab', {
     url: "/tab",
     abstract: true,
     templateUrl: "templates/tabs.html"
@@ -52,6 +55,19 @@ PB.config(function($stateProvider, $urlRouterProvider, $httpProvider) {
 });
 
 "use strict";
+angular.module('push.controllers').controller('BaseCtrl', function($scope, $ionicModal) {
+  $ionicModal.fromTemplateUrl('templates/login.html', function(modal) {
+    $scope.loginModal = modal;
+  }, {
+    scope: $scope,
+    animation: 'slide-in-up'
+  });
+  $scope.$on('$destroy', function() {
+    $scope.loginModal.remove();
+  });
+});
+
+"use strict";
 angular.module('push.services').factory('Model', function($http, $q, loc) {
   return function(options) {
     var url = loc.apiBase + options.path;
@@ -59,8 +75,10 @@ angular.module('push.services').factory('Model', function($http, $q, loc) {
       attrs = attrs || {};
       this.attributes = {};
       this.set(attrs);
+      this.initialize.apply(this, arguments);
     };
     ($traceurRuntime.createClass)(Model, {
+      initialize: function() {},
       set: function(attrs) {
         for (var attr in attrs) {
           this.attributes[attr] = attrs[attr];
@@ -129,18 +147,49 @@ angular.module('push.services').factory('Model', function($http, $q, loc) {
 });
 
 "use strict";
-angular.module('push.services').factory('User', function($q, $http, $window, $rootScope, loc) {
-  function fbLogin() {
-    var dfd = $q.defer();
-    openFB.login(function(response) {
-      if (response.status === "connected") {
-        getFBAuthParams(response.authResponse).then(function(user) {
-          dfd.resolve(user);
-        });
-      } else {
-        dfd.reject(response.status);
+angular.module('push.services').factory('EventBus', function() {
+  var events = {};
+  return {
+    on: function(eventName, callback) {
+      console.log('ListeningTo: ', eventName);
+      events[eventName] = (events[eventName] || []);
+      events[eventName].push(callback);
+    },
+    trigger: function(eventName) {
+      console.log('Triggering: ', eventName);
+      events[eventName] = (events[eventName] || []);
+      var args = [].slice.call(arguments, 1);
+      for (var $__0 = events[eventName][$traceurRuntime.toProperty(Symbol.iterator)](),
+          $__1; !($__1 = $__0.next()).done; ) {
+        var callback = $__1.value;
+        {
+          callback(args);
+        }
       }
-    }, {scope: 'email,user_friends,public_profile'});
+    }
+  };
+});
+
+"use strict";
+angular.module('push.services').factory('User', function($q, $http, $window, EventBus, loc) {
+  function updateHeaders(params) {
+    $http.defaults.headers.common['AuthToken-X'] = params.session_token;
+  }
+  function saveUser(params) {
+    $window.localStorage.currentUser = JSON.stringify(params);
+  }
+  function currentUser() {
+    return JSON.parse($window.localStorage.currentUser);
+  }
+  function pushbitLogin(loginParams) {
+    var dfd = $q.defer();
+    $http.post(loc.apiBase + '/session', loginParams).then(function(response) {
+      updateHeaders(response.data);
+      saveUser(response.data);
+      dfd.resolve(response.data);
+      EventBus.trigger('loginCompleted');
+      EventBus.trigger('authChange');
+    });
     return dfd.promise;
   }
   function getFBAuthParams(authResponse) {
@@ -159,29 +208,24 @@ angular.module('push.services').factory('User', function($q, $http, $window, $ro
     });
     return dfd.promise;
   }
-  function saveUser(params) {
-    $window.localStorage['currentUser'] = JSON.stringify(params);
-  }
-  function currentUser() {
-    return JSON.parse($window.localStorage['currentUser']);
-  }
-  function pushbitLogin(loginParams) {
-    var deferred = $q.defer();
-    $http.post(loc.apiBase + '/session', loginParams).then(function(response) {
-      updateHeaders(response.data);
-      saveUser(response.data);
-      deferred.resolve(response.data);
-      $rootScope.$broadcast('event:auth-loginConfirmed');
-    });
-    return deferred.promise;
-  }
-  function updateHeaders(params) {
-    $http.defaults.headers.common['AuthToken-X'] = params.session_token;
+  function fbLogin() {
+    var dfd = $q.defer();
+    openFB.login(function(response) {
+      if (response.status === "connected") {
+        getFBAuthParams(response.authResponse).then(function(user) {
+          dfd.resolve(user);
+        });
+      } else {
+        dfd.reject(response.status);
+      }
+    }, {scope: 'email,user_friends,public_profile'});
+    return dfd.promise;
   }
   function fbLogout() {
     var dfd = $q.defer();
     openFB.logout(function() {
-      $rootScope.$broadcast('event:auth-loginRequired');
+      EventBus.trigger('loginRequired');
+      EventBus.trigger('authChange');
       dfd.resolve();
     });
     return dfd.promise;
@@ -198,24 +242,21 @@ angular.module('push.services').factory('User', function($q, $http, $window, $ro
 });
 
 "use strict";
-angular.module('push.controllers').controller('LoginCtrl', function($scope, $state, User) {
+angular.module('push.controllers').controller('LoginCtrl', function($scope, $state, User, EventBus) {
   $scope.message = '';
   $scope.login = function() {
     User.login();
   };
-  $scope.$on('event:auth-loginRequired', function(e, rejection) {
+  EventBus.on('loginRequired', function(e, rejection) {
     $scope.loginModal.show();
   });
-  $scope.$on('event:auth-loginConfirmed', function() {
-    console.log('login confirmed');
+  EventBus.on('loginCompleted', function() {
     $scope.loginModal.hide();
   });
-  $scope.$on('event:auth-loginFailed', function(e, status) {
-    console.log('login failed');
+  EventBus.on('loginFailed', function(e, status) {
     $scope.message = "Login Failed";
   });
-  $scope.$on('event:auth-logoutComplete', function() {
-    console.log('login complete');
+  EventBus.on('logoutCompleted', function() {
     $state.go('tab.dash', {}, {
       reload: true,
       inherit: false
@@ -272,6 +313,9 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
 "use strict";
 angular.module('push.services').factory('Workout', function($http, $q, Model, loc) {
   var Workout = Model({path: '/workouts'});
+  Workout.prototype.initialize = function() {
+    this.workout_sets = [];
+  };
   Workout.prototype.parse = function(response) {
     if (response.workout_sets) {
       this.workout_sets = _.map(response.workout_sets, (function(s) {
@@ -284,15 +328,6 @@ angular.module('push.services').factory('Workout', function($http, $q, Model, lo
   Workout.prototype.addSet = function(set) {
     var dfd = $q.defer();
     $http.post(this.url() + '/workout_sets', {reps: set.reps}).then(function(response) {
-      dfd.resolve(response.data);
-    }, function(response) {
-      dfd.reject(response);
-    });
-    return dfd.promise;
-  };
-  Workout.prototype.complete = function() {
-    var dfd = $q.defer();
-    $http.put(url(this.id), {}).then(function(response) {
       dfd.resolve(response.data);
     }, function(response) {
       dfd.reject(response);
@@ -329,7 +364,7 @@ angular.module('push.services').factory('WorkoutSet', function(Model, Workout, l
   var WorkoutSet = Model({path: '/workout_sets'});
   WorkoutSet.prototype.url = function() {
     if (!this.id) {
-      return Workout.url() + this.workout_id + '/workout_sets';
+      return Workout.url() + '/' + this.get('workout_id') + '/workout_sets';
     }
     return loc.apiBase + '/workout_sets' + this.id;
   };
@@ -337,17 +372,32 @@ angular.module('push.services').factory('WorkoutSet', function(Model, Workout, l
 });
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, Workout, WorkoutSet) {
-  $scope.workout = null;
+angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, $rootScope, $stateParams, EventBus, Workout, WorkoutSet) {
   $scope.sets = [];
   $scope.reps = 0;
-  Workout.create().then(function(workout) {
-    console.log('workout created');
-    console.log(workout);
-    $scope.workout = workout;
-  }, function() {
-    console.log('uhoh workout not created', arguments);
-  });
+  $scope.workout = null;
+  function getWorkout(id) {
+    console.log('Getting Workout');
+    Workout.get(id);
+  }
+  function createWorkout() {
+    console.log('Creating Workout');
+    Workout.create().then(function(workout) {
+      $scope.workout = workout;
+      console.log('workout created', workout);
+    }, function() {
+      console.log('uhoh workout not created', arguments);
+    });
+  }
+  function setupWorkout() {
+    if ($stateParams.id === "new") {
+      createWorkout();
+    } else {
+      getWorkout($stateParams.id);
+    }
+  }
+  setupWorkout();
+  EventBus.on('authChange', setupWorkout);
   $scope.push = function() {
     $scope.reps++;
   };
@@ -359,25 +409,25 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
     set.save().then((function(response) {
       $scope.sets.push(set);
       $scope.workout.workout_sets.push(set);
-      $sope.reps = 0;
+      $scope.reps = 0;
     }));
   };
   $scope.completeWorkout = function() {
     if ($scope.reps > 0) {
       var set = new Set($scope.reps);
-      $scope.workout.addSet(set).then(function() {
+      $scope.workout.addSet(set).then((function() {
         $scope.sets.push($scope.reps);
         $scope.reps = 0;
-      });
+      }));
     }
-    $scope.workout.complete().then(function() {
+    $scope.workout.save().then((function() {
       $scope.sets = [];
       $scope.reps = 0;
-      $state.go('tab.dash', {}, {
+      $state.go('tab.workouts', {}, {
         reload: true,
         inherit: false
       });
-    });
+    }));
   };
 });
 
@@ -395,12 +445,6 @@ angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, $
   $scope.$on('event:auth-loginConfirmed', function() {
     setupWorkouts();
   });
-  $scope.startWorkout = function() {
-    $state.go('workout', {}, {
-      reload: true,
-      inherit: false
-    });
-  };
   $ionicModal.fromTemplateUrl('templates/login.html', function(modal) {
     $scope.loginModal = modal;
   }, {

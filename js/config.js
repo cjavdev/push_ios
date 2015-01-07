@@ -4,12 +4,12 @@ angular.module('push.controllers', []);
 angular.module('push.services', []);
 
 PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
-    $httpProvider.interceptors.push(function($q, $rootScope) {
+    $httpProvider.interceptors.push(function($q, EventBus) {
       return {
         'responseError': function(rejection) {
           console.log('RESPONSE ERROR', rejection);
            if(rejection.status === 403) {
-             $rootScope.$broadcast('event:auth-loginRequired', rejection);
+             EventBus.trigger('loginRequired', rejection);
            }
            return $q.reject(rejection);
         }
@@ -17,6 +17,10 @@ PB.config(function ($stateProvider, $urlRouterProvider, $httpProvider) {
     });
 
     $stateProvider
+      .state('workout', {
+        url: "/workout/:id",
+        templateUrl: "templates/workout.html"
+      })
       .state('tab', {
         url: "/tab",
         abstract: true,
