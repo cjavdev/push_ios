@@ -1,6 +1,7 @@
 <ion-view view-title="Pushbit" ng-controller="WorkoutCtrl">
   <ion-content>
-    <div ng-click="push()" class="row">
+    <div ng-click="push()" ng-class="{ 'row': true, 'pulse': pulse,
+      'push': true }">
       <div class="col col-80 col-offset-10">
         <div class="big-circle workout-btn">
           <p>PUSH!</p>

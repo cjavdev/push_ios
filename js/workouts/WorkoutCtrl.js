@@ -1,6 +1,6 @@
 /*global angular */
 angular.module('push.controllers')
-  .controller('WorkoutCtrl', function($scope, $state, $stateParams, EventBus, Workout, WorkoutSet) {
+  .controller('WorkoutCtrl', function($scope, $state, $stateParams, $timeout, EventBus, Workout, WorkoutSet) {
     $scope.sets = [];
     $scope.reps = 0;
     $scope.workout = null;
@@ -33,8 +33,13 @@ angular.module('push.controllers')
     setupWorkout();
     EventBus.on('authChange', setupWorkout);
 
+    $scope.pulse = false;
     $scope.push = function () {
       $scope.reps++;
+      $scope.pulse = true;
+      $timeout(() => {
+        $scope.pulse = false;
+      }, 1000)
     };
 
     $scope.completeSet = function () {

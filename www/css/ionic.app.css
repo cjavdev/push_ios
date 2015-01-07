@@ -7038,6 +7038,15 @@ a.button {
   font-weight: 700;
   color: white; }
 
+.push {
+  -webkit-transition: all 1s ease, height 1s ease;
+  -moz-transition: all 1s ease, height 1s ease;
+  -o-transition: all 1s ease, height 1s ease;
+  transition: all 1s ease, height 1s ease; }
+
+.pulse {
+  transform: scale(1.5) rotate(25deg); }
+
 .pushup-count {
   padding-top: 50px;
   text-align: center;

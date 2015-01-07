@@ -403,7 +403,7 @@ angular.module('push.services').factory('WorkoutSet', function(Model, loc) {
 });
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, $stateParams, EventBus, Workout, WorkoutSet) {
+angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $state, $stateParams, $timeout, EventBus, Workout, WorkoutSet) {
   $scope.sets = [];
   $scope.reps = 0;
   $scope.workout = null;
@@ -429,8 +429,13 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
   }
   setupWorkout();
   EventBus.on('authChange', setupWorkout);
+  $scope.pulse = false;
   $scope.push = function() {
     $scope.reps++;
+    $scope.pulse = true;
+    $timeout((function() {
+      $scope.pulse = false;
+    }), 1000);
   };
   $scope.completeSet = function() {
     var set = new WorkoutSet({
