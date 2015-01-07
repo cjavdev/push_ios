@@ -10,7 +10,7 @@ angular.module('push.controllers')
       Workout.get(id);
     }
 
-    function createWorkout() {
+    $scope.createWorkout = function() {
       console.log('Creating Workout');
       Workout
         .create()
@@ -20,17 +20,20 @@ angular.module('push.controllers')
         }, function () {
           console.log('uhoh workout not created', arguments);
         });
-    }
+    };
 
     function setupWorkout() {
       if($stateParams.id === "new") {
-        createWorkout();
+        $scope.createWorkout();
       } else {
         getWorkout($stateParams.id);
       }
     }
 
-    setupWorkout();
+    $scope.$on('$stateChangeSuccess', function(){
+      setupWorkout();
+    });
+
     EventBus.on('authChange', setupWorkout);
 
     $scope.pulse = false;
@@ -74,6 +77,7 @@ angular.module('push.controllers')
       $scope.workout.save().then(() => {
         $scope.sets = [];
         $scope.reps = 0;
+        $scope.workout = null;
         $state.go('tab.workouts', {}, { reload: true, inherit: false });
       });
     };

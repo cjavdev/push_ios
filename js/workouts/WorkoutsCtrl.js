@@ -1,7 +1,7 @@
 /*global angular */
 
 angular.module('push.controllers')
-  .controller('WorkoutsCtrl', function($scope, EventBus, Workout) {
+  .controller('WorkoutsCtrl', function($scope, $location, EventBus, Workout) {
     $scope.workouts = [];
 
     function setupWorkouts () {
@@ -9,6 +9,10 @@ angular.module('push.controllers')
       $scope.workouts = Workout.all();
     }
     setupWorkouts();
+
+    $scope.startNewWorkout = function () {
+      $location.url('/workout/new');
+    };
 
     EventBus.on('loginCompleted', setupWorkouts);
   });

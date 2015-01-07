@@ -411,7 +411,7 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
     console.log('Getting Workout');
     Workout.get(id);
   }
-  function createWorkout() {
+  $scope.createWorkout = function() {
     console.log('Creating Workout');
     Workout.create().then(function(workout) {
       $scope.workout = workout;
@@ -419,15 +419,17 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
     }, function() {
       console.log('uhoh workout not created', arguments);
     });
-  }
+  };
   function setupWorkout() {
     if ($stateParams.id === "new") {
-      createWorkout();
+      $scope.createWorkout();
     } else {
       getWorkout($stateParams.id);
     }
   }
-  setupWorkout();
+  $scope.$on('$stateChangeSuccess', function() {
+    setupWorkout();
+  });
   EventBus.on('authChange', setupWorkout);
   $scope.pulse = false;
   $scope.push = function() {
@@ -464,6 +466,7 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
     $scope.workout.save().then((function() {
       $scope.sets = [];
       $scope.reps = 0;
+      $scope.workout = null;
       $state.go('tab.workouts', {}, {
         reload: true,
         inherit: false
@@ -473,13 +476,16 @@ angular.module('push.controllers').controller('WorkoutCtrl', function($scope, $s
 });
 
 "use strict";
-angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, EventBus, Workout) {
+angular.module('push.controllers').controller('WorkoutsCtrl', function($scope, $location, EventBus, Workout) {
   $scope.workouts = [];
   function setupWorkouts() {
     console.log('setting up workouts');
     $scope.workouts = Workout.all();
   }
   setupWorkouts();
+  $scope.startNewWorkout = function() {
+    $location.url('/workout/new');
+  };
   EventBus.on('loginCompleted', setupWorkouts);
 });
 
