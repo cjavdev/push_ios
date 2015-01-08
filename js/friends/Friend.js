@@ -41,7 +41,7 @@ angular.module('push.services')
 
     Friendship.allFbids = function () {
       return _.map(Friendship.all(), (r) => {
-        return r.get('fbid');
+        return r.friend.get('fbid');
       });
     };
 

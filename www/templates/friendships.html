@@ -18,14 +18,12 @@
       </div>
     </form>
     <ion-list>
-      <ion-item class="item-thumbnail-left item-button-right" ng-repeat="contact in contacts">
+      <ion-item class="item-avatar item-icon-right" ng-repeat="contact
+      in contacts | challengable2">
         <img src="http://graph.facebook.com/{{ contact.id }}/picture?type=normal">
         <h2>{{ contact.name }}</h2>
-        <button disabled ng-show="pending(contact.id)" class="button button-energized" ng-click="challengeContact(contact)">
-          <i>Pending</i>
-        </button>
-        <button ng-show="challengeable(contact.id)" class="button button-energized" ng-click="challengeContact(contact)">
-          Challenge
+        <i ng-show="pending(contact.id)">Pending</i>
+        <i ng-hide="pending(contact.id)" ng-click="challengeContact(contact)" class="icon ion-ios-plus-outline"></i>
         </button>
       </ion-item>
     </ion-list>

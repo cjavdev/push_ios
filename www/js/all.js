@@ -74,6 +74,17 @@ angular.module('push.filters').filter('reverse', function() {
   return function(items) {
     return items.slice().reverse();
   };
+}).filter('challengable2', function(Friendship) {
+  var friendsIds = Friendship.allFbids();
+  function alreadyFriends(id) {
+    return _.contains(friendsIds, id);
+  }
+  return function(items) {
+    return _.filter(items, function(item) {
+      console.log('filtering');
+      return !alreadyFriends(item.id);
+    });
+  };
 });
 
 "use strict";
@@ -298,9 +309,11 @@ angular.module('push.services').factory('User', function($q, $http, $window, Eve
   }
   function fbLogout() {
     var dfd = $q.defer();
-    EventBus.trigger('loginRequired');
-    EventBus.trigger('authChange');
-    dfd.resolve();
+    openFB.logout(function() {
+      EventBus.trigger('loginRequired');
+      EventBus.trigger('authChange');
+      dfd.resolve();
+    });
     return dfd.promise;
   }
   return {
@@ -372,7 +385,7 @@ angular.module('push.services').factory('Friend', function(Model) {
   };
   Friendship.allFbids = function() {
     return _.map(Friendship.all(), (function(r) {
-      return r.get('fbid');
+      return r.friend.get('fbid');
     }));
   };
   return Friendship;
@@ -435,10 +448,10 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
   $scope.message = '';
   $scope.contacts = [];
   var pendingRequestIds = SentFriendRequest.allFbids();
-  var friendsIds = Friendship.allFbids();
   $scope.pending = function(id) {
     return _.contains(pendingRequestIds, id);
   };
+  var friendsIds = Friendship.allFbids();
   function alreadyFriends(id) {
     return _.contains(friendsIds, id);
   }

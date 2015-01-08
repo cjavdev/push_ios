@@ -65,11 +65,11 @@ angular.module('push.services')
 
     function fbLogout() {
       var dfd = $q.defer();
-      // openFB.logout(function () {
-      EventBus.trigger('loginRequired');
-      EventBus.trigger('authChange');
-      dfd.resolve();
-      // });
+      openFB.logout(function () {
+        EventBus.trigger('loginRequired');
+        EventBus.trigger('authChange');
+        dfd.resolve();
+      });
       return dfd.promise;
     }
 

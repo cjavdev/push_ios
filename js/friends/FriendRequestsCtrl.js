@@ -6,12 +6,12 @@ angular.module('push.controllers')
     $scope.contacts = [];
 
     var pendingRequestIds = SentFriendRequest.allFbids();
-    var friendsIds = Friendship.allFbids();
 
     $scope.pending = function (id) {
       return _.contains(pendingRequestIds, id);
     };
 
+    var friendsIds = Friendship.allFbids();
     function alreadyFriends(id) {
       return _.contains(friendsIds, id);
     }
