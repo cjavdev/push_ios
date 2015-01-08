@@ -1,6 +1,7 @@
 /*global angular,openFB */
 angular.module('push.services')
   .factory('User', function ($q, $http, $window, EventBus, loc) {
+
     function updateHeaders(params) {
       $window.localStorage.authToken = params.session_token;
       $http.defaults.headers.common['AuthToken-X'] = params.session_token;

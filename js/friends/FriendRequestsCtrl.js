@@ -1,13 +1,23 @@
 /*global angular, _, openFB */
 angular.module('push.controllers')
-  .controller('FriendshipsCtrl', function ($scope, EventBus, Friend, FriendRequest, SentFriendRequest) {
+  .controller('FriendshipsCtrl', function ($scope, EventBus, Friendship, FriendRequest, SentFriendRequest) {
     $scope.friendEmail = '';
     $scope.message = '';
     $scope.contacts = [];
 
     var pendingRequestIds = SentFriendRequest.allFbids();
-    $scope.pending = function(id) {
+    var friendsIds = Friendship.allFbids();
+
+    $scope.pending = function (id) {
       return _.contains(pendingRequestIds, id);
+    };
+
+    function alreadyFriends(id) {
+      return _.contains(friendsIds, id);
+    }
+
+    $scope.challengeable = function (id) {
+      return !$scope.pending(id) && !alreadyFriends(id);
     };
 
     openFB.api({
@@ -18,7 +28,7 @@ angular.module('push.controllers')
       },
       error: function (response) {
         console.log('err getting FB friends!', response);
-        if(response.code === 190) {
+        if (response.code === 190) {
           EventBus.trigger('loginRequired');
         }
       }

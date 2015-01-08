@@ -4,19 +4,23 @@
   </ion-nav-buttons>
   <ion-content>
     <ion-list>
-      <ion-item class="item-avatar" ng-repeat="friend in scope.friends" type="item-text-wrap" href="#/tab/friend/{{friend.id}}">
-        <img ng-src="{{friend.face}}">
-        <h2>{{friend.name}}</h2>
+      <ion-item class="item-avatar" ng-repeat="friendship in friendships" type="item-text-wrap">
+        <img ng-src="{{ friendship.friend.face() }}">
+        <h2>{{ friendship.friend.name() }}</h2>
+        <span class="badge badge-assertive">
+          {{ friendship.friend.sevenDayCount() }}
+        </span>
       </ion-item>
-    </ion-list>
-    <ion-list>
+      <div class="item item-divider" ng-show="anyChallengers()">
+        Challengers
+      </div>
       <ion-item class="item-avatar item-button-right" ng-repeat="request in requests" type="item-text-wrap">
         <img src="http://graph.facebook.com/{{ request.get('sender').fbid }}/picture?type=normal">
         <h2>
           {{ request.get('sender').f_name }}
           {{ request.get('sender').l_name }}
         </h2>
-        <button class="button button-energized">
+        <button ng-click="accept(request)" class="button button-energized">
           Accept
         </button>
       </ion-item>

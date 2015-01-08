@@ -346,17 +346,46 @@ angular.module('push.controllers').controller('AccountCtrl', function($scope, Us
 });
 
 "use strict";
-angular.module('push.services').factory('Friend', function($http, Model, loc) {
-  var Friend = Model({path: '/friendships'});
-  Friend.inviteFriend = function(email) {
-    return $http.post(loc.apiBase + '/friend_requests', {email: email});
+angular.module('push.services').factory('Friend', function(Model) {
+  var Friend = Model({path: '/friends'});
+  Friend.prototype.name = function() {
+    return this.get('f_name') + ' ' + this.get('l_name');
+  };
+  Friend.prototype.face = function() {
+    return "https://graph.facebook.com/" + this.get('fbid') + "/picture?type=square";
+  };
+  Friend.prototype.sevenDayCount = function() {
+    return this.get('seven_day_count');
   };
   return Friend;
+}).factory('Friendship', function($http, Model, Friend, loc) {
+  var Friendship = Model({path: '/friendships'});
+  Friendship.prototype.parse = function(attrs) {
+    if (attrs.friend) {
+      this.friend = new Friend(attrs.friend);
+      delete attrs.friend;
+    }
+    return attrs;
+  };
+  Friendship.prototype.name = function() {
+    return this.friend.name();
+  };
+  Friendship.allFbids = function() {
+    return _.map(Friendship.all(), (function(r) {
+      return r.get('fbid');
+    }));
+  };
+  return Friendship;
 });
 
 "use strict";
-angular.module('push.services').factory('FriendRequest', function(Model) {
+angular.module('push.services').factory('FriendRequest', function($http, Model) {
   var FriendRequest = Model({path: '/friend_requests'});
+  FriendRequest.prototype.accept = function() {
+    var acceptUrl = this.url() + '/accept';
+    console.log('sending accept request to: ', acceptUrl);
+    return $http.post(acceptUrl);
+  };
   FriendRequest.createForContact = function(contact) {
     var fbid = contact.id;
     var request = new FriendRequest({fbid: fbid});
@@ -374,17 +403,12 @@ angular.module('push.services').factory('FriendRequest', function(Model) {
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friend, FriendRequest, SentFriendRequest, Contacts) {
-  $scope.friends = [];
-  $scope.friends = Friend.all();
-  $scope.contacts = [{
-    Name: 'name',
-    Title: 'title',
-    Id: 1
-  }];
-  SentFriendRequest.all();
+angular.module('push.controllers').controller('FriendsCtrl', function($scope, $ionicModal, Friendship, FriendRequest, SentFriendRequest) {
+  $scope.friendships = Friendship.all();
   $scope.requests = FriendRequest.all();
-  console.log($scope.requests);
+  $scope.anyChallengers = function() {
+    return $scope.requests.length > 0;
+  };
   $ionicModal.fromTemplateUrl('templates/friendships.html', function(modal) {
     $scope.friendshipsModal = modal;
   }, {
@@ -397,16 +421,29 @@ angular.module('push.controllers').controller('FriendsCtrl', function($scope, $i
   $scope.done = function() {
     $scope.friendshipsModal.hide();
   };
+  $scope.accept = function(request) {
+    request.accept().then((function() {
+      Friend.all();
+    }));
+  };
+  SentFriendRequest.all();
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, FriendRequest, SentFriendRequest) {
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friendship, FriendRequest, SentFriendRequest) {
   $scope.friendEmail = '';
   $scope.message = '';
   $scope.contacts = [];
   var pendingRequestIds = SentFriendRequest.allFbids();
+  var friendsIds = Friendship.allFbids();
   $scope.pending = function(id) {
     return _.contains(pendingRequestIds, id);
+  };
+  function alreadyFriends(id) {
+    return _.contains(friendsIds, id);
+  }
+  $scope.challengeable = function(id) {
+    return !$scope.pending(id) && !alreadyFriends(id);
   };
   openFB.api({
     path: '/v2.2/me/friends',
