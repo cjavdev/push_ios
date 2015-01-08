@@ -210,10 +210,8 @@ angular.module('push.services').factory('Model', function($http, $q, $window, lo
       }));
     };
     Model.all = function() {
-      readAllLocal();
       var ids = Model.ids();
       $http.get(url, {cache: true}).then((function(response) {
-        writeAllLocal(response.data);
         _.each(response.data, (function(data) {
           if (!_.contains(ids, data.id)) {
             _all.push(new Model(data));

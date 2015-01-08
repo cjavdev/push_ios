@@ -9,7 +9,8 @@
     </div>
     <ul class="list">
       <li ng-repeat="workout in workouts | reverse" class="item">
-        {{ workout.completedAt() }} | {{ workout.totalReps() }}
+        {{ workout.totalReps() }} Reps
+        <span class="item-note">{{ workout.completedAt() }}</span>
       </li>
     </ul>
   </ion-content>
