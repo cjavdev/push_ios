@@ -1,4 +1,4 @@
-/*global angular */
+/*global angular, _ */
 
 angular.module('push.filters')
   .filter('reverse', function () {
@@ -8,15 +8,20 @@ angular.module('push.filters')
   })
   .filter('challengable2', function (Friendship) {
     var friendsIds = Friendship.allFbids();
-
-    function alreadyFriends(id) {
-      return _.contains(friendsIds, id);
-    }
-
     return function (items) {
+      function alreadyFriends(id) {
+        return _.contains(friendsIds, id);
+      }
+
       return _.filter(items, function (item) {
-        console.log('filtering');
-        return !alreadyFriends(item.id);
+        return !alreadyFriends(item.get('fbid'));
+      });
+    };
+  })
+  .filter('orderByFriendReps', function () {
+    return function(friendships) {
+      return _.sortBy(friendships, function (f) {
+        return f.friend.totalReps();
       });
     };
   });

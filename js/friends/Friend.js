@@ -4,6 +4,9 @@ angular.module('push.services')
     var Friend = Model({ path: '/friends' });
 
     Friend.prototype.name = function() {
+      if(this.get('name')) {
+        return this.get('name');
+      }
       return this.get('f_name') + ' ' + this.get('l_name');
     };
 
@@ -13,6 +16,14 @@ angular.module('push.services')
 
     Friend.prototype.sevenDayCount = function() {
       return this.get('seven_day_count');
+    };
+
+    Friend.fromFb = function (data) {
+      var friend = new Friend({
+        fbid: data.id,
+        name: data.name
+      });
+      return friend;
     };
 
     return Friend;

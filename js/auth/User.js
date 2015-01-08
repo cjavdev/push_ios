@@ -78,7 +78,8 @@ angular.module('push.services')
         return fbLogin();
       },
       logout: function () {
-        $window.localStorage.removeItem('authToken');
+        // $window.localStorage.removeItem('authToken');
+        $window.localStorage.clear();
         return fbLogout();
       },
       currentUser: currentUser

@@ -76,13 +76,18 @@ angular.module('push.filters').filter('reverse', function() {
   };
 }).filter('challengable2', function(Friendship) {
   var friendsIds = Friendship.allFbids();
-  function alreadyFriends(id) {
-    return _.contains(friendsIds, id);
-  }
   return function(items) {
+    function alreadyFriends(id) {
+      return _.contains(friendsIds, id);
+    }
     return _.filter(items, function(item) {
-      console.log('filtering');
-      return !alreadyFriends(item.id);
+      return !alreadyFriends(item.get('fbid'));
+    });
+  };
+}).filter('orderByFriendReps', function() {
+  return function(friendships) {
+    return _.sortBy(friendships, function(f) {
+      return f.friend.totalReps();
     });
   };
 });
@@ -210,10 +215,14 @@ angular.module('push.services').factory('Model', function($http, $q, $window, lo
       }));
     };
     Model.all = function() {
+      readAllLocal();
       var ids = Model.ids();
       $http.get(url, {cache: true}).then((function(response) {
+        writeAllLocal(response.data);
         _.each(response.data, (function(data) {
-          if (!_.contains(ids, data.id)) {
+          if (!_.any(_all, (function(m) {
+            return m.id === data.id;
+          }))) {
             _all.push(new Model(data));
           }
         }));
@@ -319,7 +328,7 @@ angular.module('push.services').factory('User', function($q, $http, $window, Eve
       return fbLogin();
     },
     logout: function() {
-      $window.localStorage.removeItem('authToken');
+      $window.localStorage.clear();
       return fbLogout();
     },
     currentUser: currentUser
@@ -360,6 +369,9 @@ angular.module('push.controllers').controller('AccountCtrl', function($scope, Us
 angular.module('push.services').factory('Friend', function(Model) {
   var Friend = Model({path: '/friends'});
   Friend.prototype.name = function() {
+    if (this.get('name')) {
+      return this.get('name');
+    }
     return this.get('f_name') + ' ' + this.get('l_name');
   };
   Friend.prototype.face = function() {
@@ -367,6 +379,13 @@ angular.module('push.services').factory('Friend', function(Model) {
   };
   Friend.prototype.sevenDayCount = function() {
     return this.get('seven_day_count');
+  };
+  Friend.fromFb = function(data) {
+    var friend = new Friend({
+      fbid: data.id,
+      name: data.name
+    });
+    return friend;
   };
   return Friend;
 }).factory('Friendship', function($http, Model, Friend, loc) {
@@ -398,7 +417,7 @@ angular.module('push.services').factory('FriendRequest', function($http, Model) 
     return $http.post(acceptUrl);
   };
   FriendRequest.createForContact = function(contact) {
-    var fbid = contact.id;
+    var fbid = contact.get('fbid');
     var request = new FriendRequest({fbid: fbid});
     return request.save();
   };
@@ -441,7 +460,7 @@ angular.module('push.controllers').controller('FriendsCtrl', function($scope, $i
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friendship, FriendRequest, SentFriendRequest) {
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, Friendship, FriendRequest, SentFriendRequest) {
   $scope.friendEmail = '';
   $scope.message = '';
   $scope.contacts = [];
@@ -460,7 +479,9 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
     path: '/v2.2/me/friends',
     success: function(response) {
       console.log('getting fb friends: ', response.data);
-      $scope.contacts = response.data;
+      $scope.contacts = _.map(response.data, (function(f) {
+        return Friend.fromFb(f);
+      }));
     },
     error: function(response) {
       console.log('err getting FB friends!', response);

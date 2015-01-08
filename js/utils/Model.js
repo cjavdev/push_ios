@@ -109,14 +109,15 @@ angular.module('push.services')
       };
 
       Model.all = function () {
-        // readAllLocal();
+        readAllLocal();
         var ids = Model.ids();
 
         $http.get(url, { cache: true }).then((response) => {
-          // writeAllLocal(response.data);
-
+          writeAllLocal(response.data);
           _.each(response.data, (data) => {
-            if(!_.contains(ids, data.id)) {
+            if(!_.any(_all, (m) => {
+              return m.id === data.id;
+            })) {
               _all.push(new Model(data));
             }
           });

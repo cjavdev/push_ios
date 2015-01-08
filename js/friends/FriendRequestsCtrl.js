@@ -1,6 +1,6 @@
 /*global angular, _, openFB */
 angular.module('push.controllers')
-  .controller('FriendshipsCtrl', function ($scope, EventBus, Friendship, FriendRequest, SentFriendRequest) {
+  .controller('FriendshipsCtrl', function ($scope, EventBus, Friend, Friendship, FriendRequest, SentFriendRequest) {
     $scope.friendEmail = '';
     $scope.message = '';
     $scope.contacts = [];
@@ -24,7 +24,9 @@ angular.module('push.controllers')
       path: '/v2.2/me/friends',
       success: function (response) {
         console.log('getting fb friends: ', response.data);
-        $scope.contacts = response.data;
+        $scope.contacts = _.map(response.data, (f) => {
+          return Friend.fromFb(f);
+        });
       },
       error: function (response) {
         console.log('err getting FB friends!', response);

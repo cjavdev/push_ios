@@ -3,6 +3,9 @@
     <button class="button button-clear icon ion-ios-plus-empty" ng-click="showFriendships()"></button>
   </ion-nav-buttons>
   <ion-content>
+    <button ng-hide="friendships.length" class="button button-full button-energized" ng-click="showFriendships()">
+      Challenge Your Friends
+    </button>
     <ion-list>
       <ion-item class="item-avatar" ng-repeat="friendship in friendships" type="item-text-wrap">
         <img ng-src="{{ friendship.friend.face() }}">

@@ -12,7 +12,7 @@ angular.module('push.services')
     };
 
     FriendRequest.createForContact = function (contact) {
-      var fbid = contact.id;
+      var fbid = contact.get('fbid');
       var request = new FriendRequest({
         fbid: fbid
       });
