@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<widget id="io.pushbit.ios" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="io.pushbit.ios" version="0.0.4" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
   <name>push_ios</name>
   <description>
-    An Ionic Framework and Cordova project.
+    Compete with your friends to get the most pushups!
   </description>
-  <author email="cjavilla@gmail.com" href="http://pushbit.io/">
-    Ionic Framework Team
+  <author email="cjavilla@gmail.com" href="http://cjavilla.com/">
+    CJ Avilla and Ryan Sepassi
   </author>
   <content src="index.html"/>
   <access origin="*"/>
