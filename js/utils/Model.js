@@ -24,11 +24,6 @@ angular.module('push.services')
         setup() {
         }
 
-        dummy() {
-          console.log('calling dummy');
-          return "dummy";
-        }
-
         set(attrs) {
           for(var attr in attrs) {
             this.attributes[attr] = attrs[attr];
