@@ -57,6 +57,7 @@ angular.module('push.services')
               this.set(this.parse(response.data));
               dfd.resolve(this);
             }, (response) => {
+              console.log('Update failed');
               dfd.reject(this);
             });
           return dfd.promise;
@@ -70,6 +71,7 @@ angular.module('push.services')
               this.set(this.parse(response.data));
               dfd.resolve(this);
             }, (response) => {
+              console.log('Create failed');
               dfd.reject(this);
             });
           return dfd.promise;

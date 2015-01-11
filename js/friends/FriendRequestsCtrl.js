@@ -1,8 +1,9 @@
 /*global angular, _, openFB */
 angular.module('push.controllers')
-  .controller('FriendshipsCtrl', function ($scope, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
-    $scope.friendEmail = '';
-    $scope.message = '';
+  .controller('FriendshipsCtrl', function ($scope, $ionicPopup, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
+    $scope.friend = {
+      email: ''
+    };
     $scope.contacts = [];
 
     var pendingRequestIds = SentFriendRequest.allFbids();
@@ -55,9 +56,12 @@ angular.module('push.controllers')
       console.log('inviting', email);
       Invitation.create({
         email: email
-      }).then(function (friends) {
-        $scope.friendEmail = '';
-        $scope.message = 'Sent!';
+      }).then(function () {
+        $scope.friend.email = '';
+        var alertPopup = $ionicPopup.alert({
+          title: "Success",
+          template: email + " Invited."
+        });
       });
     };
   });

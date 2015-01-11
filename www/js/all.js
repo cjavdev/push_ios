@@ -167,6 +167,7 @@ angular.module('push.services').factory('Model', function($http, $q, $window, lo
           $__0.set($__0.parse(response.data));
           dfd.resolve($__0);
         }), (function(response) {
+          console.log('Update failed');
           dfd.reject($__0);
         }));
         return dfd.promise;
@@ -178,6 +179,7 @@ angular.module('push.services').factory('Model', function($http, $q, $window, lo
           $__0.set($__0.parse(response.data));
           dfd.resolve($__0);
         }), (function(response) {
+          console.log('Create failed');
           dfd.reject($__0);
         }));
         return dfd.promise;
@@ -456,9 +458,8 @@ angular.module('push.controllers').controller('FriendsCtrl', function($scope, $i
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
-  $scope.friendEmail = '';
-  $scope.message = '';
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, $ionicPopup, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
+  $scope.friend = {email: ''};
   $scope.contacts = [];
   var pendingRequestIds = SentFriendRequest.allFbids();
   $scope.pending = function(id) {
@@ -492,9 +493,12 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
   };
   $scope.inviteFriend = function(email) {
     console.log('inviting', email);
-    Invitation.create({email: email}).then(function(friends) {
-      $scope.friendEmail = '';
-      $scope.message = 'Sent!';
+    Invitation.create({email: email}).then(function() {
+      $scope.friend.email = '';
+      var alertPopup = $ionicPopup.alert({
+        title: "Success",
+        template: email + " Invited."
+      });
     });
   };
 });
