@@ -1,6 +1,6 @@
 /*global angular, _, openFB */
 angular.module('push.controllers')
-  .controller('FriendshipsCtrl', function ($scope, EventBus, Friend, Friendship, FriendRequest, SentFriendRequest) {
+  .controller('FriendshipsCtrl', function ($scope, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
     $scope.friendEmail = '';
     $scope.message = '';
     $scope.contacts = [];
@@ -53,9 +53,11 @@ angular.module('push.controllers')
 
     $scope.inviteFriend = function (email) {
       console.log('inviting', email);
-      Friend.inviteFriend(email).then(function (friends) {
+      Invitation.create({
+        email: email
+      }).then(function (friends) {
         $scope.friendEmail = '';
         $scope.message = 'Sent!';
       });
-    }
+    };
   });

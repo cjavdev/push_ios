@@ -139,10 +139,6 @@ angular.module('push.services').factory('Model', function($http, $q, $window, lo
       },
       initialize: function() {},
       setup: function() {},
-      dummy: function() {
-        console.log('calling dummy');
-        return "dummy";
-      },
       set: function(attrs) {
         for (var attr in attrs) {
           this.attributes[attr] = attrs[attr];
@@ -460,7 +456,7 @@ angular.module('push.controllers').controller('FriendsCtrl', function($scope, $i
 });
 
 "use strict";
-angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, Friendship, FriendRequest, SentFriendRequest) {
+angular.module('push.controllers').controller('FriendshipsCtrl', function($scope, EventBus, Friend, Friendship, Invitation, FriendRequest, SentFriendRequest) {
   $scope.friendEmail = '';
   $scope.message = '';
   $scope.contacts = [];
@@ -496,11 +492,17 @@ angular.module('push.controllers').controller('FriendshipsCtrl', function($scope
   };
   $scope.inviteFriend = function(email) {
     console.log('inviting', email);
-    Friend.inviteFriend(email).then(function(friends) {
+    Invitation.create({email: email}).then(function(friends) {
       $scope.friendEmail = '';
       $scope.message = 'Sent!';
     });
   };
+});
+
+"use strict";
+angular.module('push.services').factory('Invitation', function(Model) {
+  var Invitation = Model({path: '/friend_invitations'});
+  return Invitation;
 });
 
 "use strict";

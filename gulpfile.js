@@ -29,6 +29,7 @@ var paths = {
     './js/friends/FriendRequest.js',
     './js/friends/FriendsCtrl.js',
     './js/friends/FriendRequestsCtrl.js',
+    './js/friends/Invitation.js',
     './js/workouts/Workout.js',
     './js/workouts/WorkoutSet.js',
     './js/workouts/WorkoutCtrl.js',
